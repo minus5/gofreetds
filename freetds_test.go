@@ -1,6 +1,6 @@
 package freetds
 
-import ("testing"; "os";"fmt")
+import ("testing"; "os";"fmt";"time")
 
 var CREATE_DB_SCRIPTS = [...]string{`
 if exists(select * from sys.tables where name = 'freetds_types')
@@ -121,4 +121,38 @@ func TestReading(t *testing.T) {
     fmt.Printf("return value: %d\n", r.ReturnValue)
   }
 
+}
+
+
+func BenchmarkConnectExecute(b *testing.B) {
+  for i := 0; i < 100; i++ {
+    conn := ConnectToTestDb(nil)
+    conn.Exec("select * from authors")
+    conn.Close()
+  }
+}
+
+func BenchmarkParalelConnectExecute(b *testing.B) {
+  pool := make(chan int, 100) //connection pool for 100 connections
+  running := 0
+  for i := 0; i < 1000; i++ {
+    go func(i int) {
+      pool <- i
+      running++
+//      fmt.Printf("starting %d\n", i)
+      conn := ConnectToTestDb(nil)
+      defer conn.Close()
+      conn.Exec("select * from authors")
+      <- pool
+      running--
+//      fmt.Printf("finished %d\n", i)
+    }(i)
+  }
+  for {
+    time.Sleep(1e8)
+//    fmt.Printf("running %d\n", running)
+    if running == 0 {
+      break
+    }
+  }
 }
