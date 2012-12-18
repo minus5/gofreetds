@@ -58,16 +58,31 @@ func ConnectToTestDb(t *testing.T) (*Conn) {
 
 func TestConnect(t *testing.T) {
   conn := ConnectToTestDb(t)
-  if conn != nil {
-    defer conn.Close()
+  if conn == nil { return }
+  defer conn.Close()
+  if !conn.IsLive() {
+    t.Error()
   }
+  if conn.isDead() {
+    t.Error()
+  }
+}
+
+func TestItIsSafeToCloseFailedConnection(t *testing.T) {
+  conn := new(Conn)
+  if conn == nil { return }
+  if conn.IsLive() {
+    t.Error()
+  }
+  if !conn.isDead() {
+    t.Error()
+  }
+  conn.Close()
 }
 
 func TestCreateTable(t *testing.T) {
   conn := ConnectToTestDb(t)
-  if conn == nil {
-    return
-  }
+  if conn == nil { return }
   defer conn.Close()
   for _, s := range CREATE_DB_SCRIPTS {
     _, err := conn.Exec(s)
@@ -79,9 +94,7 @@ func TestCreateTable(t *testing.T) {
 
 func TestStoredProcedureReturnValue(t *testing.T) {
   conn := ConnectToTestDb(t)
-  if conn == nil {
-    return
-  }
+  if conn == nil { return }
   defer conn.Close()
   results, err := conn.Exec("exec freetds_return_value")
   if err != nil {
@@ -94,9 +107,7 @@ func TestStoredProcedureReturnValue(t *testing.T) {
 
 func TestReading(t *testing.T) {
   conn := ConnectToTestDb(t)
-  if conn == nil {
-    return
-  }
+  if conn == nil { return }
   defer conn.Close()
 
   results, err := conn.Exec("select * from freetds_types")
@@ -104,31 +115,36 @@ func TestReading(t *testing.T) {
     fmt.Printf("error: %s\n%s\n%s", err, conn.Message, conn.Error)
     return
   }
-  fmt.Printf("results %v", results)
-  for _, r := range results {
-    fmt.Printf("\n\nColums:\n")
-    for j, c := range r.Columns {
-      fmt.Printf("\t%3d%20s%10d%10d\n", j, c.Name, c.DbType, c.DbSize)
-    }
-    for i, _ := range r.Rows {
-      for j, _ := range r.Columns {
-        fmt.Printf("value[%2d, %2d]: %v\n", i, j, r.Rows[i][j])
-//        fmt.Printf("%20v", r.Rows[i][j])
-      }
-      fmt.Printf("\n")
-    }
-    fmt.Printf("rows affected: %d\n", r.RowsAffected)
-    fmt.Printf("return value: %d\n", r.ReturnValue)
-  }
-
+  PrintResults(results)
 }
-
 
 func BenchmarkConnectExecute(b *testing.B) {
   for i := 0; i < 100; i++ {
     conn := ConnectToTestDb(nil)
     conn.Exec("select * from authors")
     conn.Close()
+  }
+}
+
+func TestRetryOnKilledConnection(t *testing.T) {
+  conn1 := ConnectToTestDb(t)
+  conn2 := ConnectToTestDb(t)
+  if conn1 == nil || conn2 == nil {
+    return
+  }
+
+  pid1, _ := conn1.SelectValue("select @@spid")
+  conn2.Exec(fmt.Sprintf("kill %d", pid1))
+  if conn1.IsLive() {
+    t.Error()
+  }
+  _, err := conn1.exec("select * from authors")
+  if err == nil {
+    t.Error()
+  }
+  _, err = conn1.Exec("select * from authors")
+  if err != nil {
+    t.Error()
   }
 }
 
@@ -139,18 +155,18 @@ func BenchmarkParalelConnectExecute(b *testing.B) {
     go func(i int) {
       pool <- i
       running++
-//      fmt.Printf("starting %d\n", i)
+      fmt.Printf("starting %d\n", i)
       conn := ConnectToTestDb(nil)
       defer conn.Close()
       conn.Exec("select * from authors")
       <- pool
       running--
-//      fmt.Printf("finished %d\n", i)
+      fmt.Printf("finished %d\n", i)
     }(i)
   }
   for {
     time.Sleep(1e8)
-//    fmt.Printf("running %d\n", running)
+    fmt.Printf("running %d\n", running)
     if running == 0 {
       break
     }

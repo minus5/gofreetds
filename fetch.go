@@ -49,7 +49,6 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
       col.typ = int(typ)
       col.size = int(size)
       col.bindTyp = int(bindTyp)
-//      fmt.Printf("column %d -> %s %d\n", i,  name, typ)
       col.buffer = make([]byte, size + 1)
       erc = C.dbbind(conn.dbproc, no, bindTyp, size + 1, (*C.BYTE)(&col.buffer[0]))
       if (erc == C.FAIL) {
@@ -67,12 +66,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
         break
       }
       if rowCode == C.REG_ROW {
-        //fmt.Printf("\n")
         for j:=0; j<cols; j++ {
           col := columns[j]
           result.AddValue(i, j, col.Value())
-          // value := col.Value()
-          //fmt.Printf("%2d %20s %10T %10d %10d %v\n", j, col.name, value, col.size, col.typ, value)
         }
       }
     }
