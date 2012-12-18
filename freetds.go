@@ -4,51 +4,50 @@ import (
   "fmt"
   "errors"
   "unsafe"
-)
+ )
 
+ /*
+ #cgo LDFLAGS: -lsybdb
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <assert.h>
+ #include <errno.h>
+ #include <unistd.h>
+ #include <libgen.h>
 
-/*
-#cgo LDFLAGS: -lsybdb
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <errno.h>
-#include <unistd.h>
-#include <libgen.h>
+ #include <sybfront.h>
+ #include <sybdb.h>
 
-#include <sybfront.h>
-#include <sybdb.h>
+ static int err_handler(DBPROCESS * dbproc, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr)
+ {
+   extern int ErrHandler(long dbprocAddr, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr);
+   return ErrHandler((long)dbproc, severity, dberr, oserr, dberrstr, oserrstr);
+ }
 
-static int err_handler(DBPROCESS * dbproc, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr)
-{
-  extern int ErrHandler(long dbprocAddr, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr);
-  return ErrHandler((long)dbproc, severity, dberr, oserr, dberrstr, oserrstr);
-}
+ static int msg_handler(DBPROCESS * dbproc, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line)
+ {
+   extern int MsgHandler(long dbprocAddr, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line);
+   return MsgHandler((long)dbproc, msgno, msgstate, severity, msgtext, srvname, procname, line);
+ }
 
-static int msg_handler(DBPROCESS * dbproc, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line)
-{
-  extern int MsgHandler(long dbprocAddr, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line);
-  return MsgHandler((long)dbproc, msgno, msgstate, severity, msgtext, srvname, procname, line);
-}
+ static void my_dblogin(LOGINREC* login, char* username, char* password) {
+  setenv("TDSPORT", "1433", 1);
+  setenv("TDSVER", "8.0", 1);
+  dbsetlogintime(10);
 
-static void my_dblogin(LOGINREC* login, char* username, char* password) {
- setenv("TDSPORT", "1433", 1);
- setenv("TDSVER", "8.0", 1);
- dbsetlogintime(10);
+  dberrhandle(err_handler);
+  dbmsghandle(msg_handler);
+  DBSETLUSER(login, username);
+  DBSETLPWD(login, password);
+  dbsetlname(login, "UTF-8", DBSETCHARSET);
+ }
 
- dberrhandle(err_handler);
- dbmsghandle(msg_handler);
- DBSETLUSER(login, username);
- DBSETLPWD(login, password);
- dbsetlname(login, "UTF-8", DBSETCHARSET);
-}
+ static long dbproc_addr(DBPROCESS * dbproc) {
+  return (long) dbproc;
+ }
 
-static long dbproc_addr(DBPROCESS * dbproc) {
- return (long) dbproc;
-}
-
-*/
+ */
 import "C"
 
 var connections map[int64]*Conn = make(map[int64]*Conn)
@@ -60,8 +59,8 @@ type Conn struct {
   Message string
   currentResult *Result
   retries int
-  user, pwd, host, database string
-}
+  user, pwd, host, database, mirrorHost string
+ }
 
 func (conn *Conn) addMessage(msg string) {
   if len(conn.Message) > 0 {
@@ -71,7 +70,7 @@ func (conn *Conn) addMessage(msg string) {
   if conn.currentResult != nil {
     conn.currentResult.Message += msg
   }
-}
+ }
 
 func (conn *Conn) addError(err string) {
   if len(conn.Error) > 0 {
@@ -82,6 +81,11 @@ func (conn *Conn) addError(err string) {
 
 func Connect(user, pwd, host, database string) (*Conn, error) {
   conn := &Conn{user: user, pwd:pwd, host:host, database: database, retries: 1}
+  return conn.connect()
+}
+
+func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
+  conn := &Conn{user: user, pwd:pwd, host:host, database: database, retries: 1, mirrorHost: mirrorHost}
   return conn.connect()
 }
 
@@ -152,8 +156,8 @@ func (conn *Conn) Exec(sql string) ([]*Result, error) {
   var err error
   for i:=0; i<=conn.retries; i++ {
     results, err := conn.exec(sql)
-    if err == nil || !conn.isDead() {
-      return results, nil
+    if !(err != nil && conn.isDead()) {
+      return results, err
     }
     _, err = conn.connect()
     if err != nil {
@@ -170,12 +174,16 @@ func (conn *Conn) exec(sql string) ([]*Result, error) {
   }
   if C.dbsqlexec(conn.dbproc) == C.FAIL {
     if len(conn.Error) != 0 {
-      return nil, errors.New(conn.Error + conn.Message)
+      return nil, errors.New(conn.Error)
     } else {
       return nil, errors.New("dbsqlexec failed")
     }
   }
-  return conn.fetchResults()
+  rst, err := conn.fetchResults()
+  if err == nil && len(conn.Error) > 0 {
+    return rst, errors.New(conn.Error)
+  }
+  return rst, err
 }
 
 func (conn *Conn) isDead() bool {
@@ -218,8 +226,11 @@ func PrintResults(results []*Result) {
 
 func (conn *Conn) SelectValue(sql string) (interface{}, error){
   results, err := conn.Exec(sql)
-  if err != nil {
-    return nil, err
+  if err != nil || results == nil {
+    return nil, errors.New(conn.Error + conn.Message)
+  }
+  if len(results[0].Rows) == 0 {
+    return nil, errors.New("No rows in result.")
   }
   return results[0].Rows[0][0], nil
 }

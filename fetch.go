@@ -85,7 +85,6 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
   return results, nil
 }
 
-
 type column struct {
   name string
   typ int

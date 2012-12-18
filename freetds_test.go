@@ -1,6 +1,6 @@
 package freetds
 
-import ("testing"; "os";"fmt";"time")
+import ("testing"; "os";"fmt";"time";"strings")
 
 var CREATE_DB_SCRIPTS = [...]string{`
 if exists(select * from sys.tables where name = 'freetds_types')
@@ -48,7 +48,8 @@ func ConnectToTestDb(t *testing.T) (*Conn) {
   user := os.Getenv("GOFREETDS_USER")
   pwd  := os.Getenv("GOFREETDS_PWD")
   host := os.Getenv("GOFREETDS_HOST")
-  conn, err := Connect(user, pwd, host, db)
+  mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
+  conn, err := Connect2(user, pwd, host, mirror, db)
   if err != nil {
     t.Errorf("can't connect to the test database")
     return nil
@@ -118,14 +119,6 @@ func TestReading(t *testing.T) {
   PrintResults(results)
 }
 
-func BenchmarkConnectExecute(b *testing.B) {
-  for i := 0; i < 100; i++ {
-    conn := ConnectToTestDb(nil)
-    conn.Exec("select * from authors")
-    conn.Close()
-  }
-}
-
 func TestRetryOnKilledConnection(t *testing.T) {
   conn1 := ConnectToTestDb(t)
   conn2 := ConnectToTestDb(t)
@@ -145,6 +138,97 @@ func TestRetryOnKilledConnection(t *testing.T) {
   _, err = conn1.Exec("select * from authors")
   if err != nil {
     t.Error()
+  }
+}
+
+func TestExecute(t *testing.T) {
+  conn := ConnectToTestDb(t)
+  if conn == nil { return }
+  defer conn.Close()
+
+  rst, err := conn.Exec("select 1")
+  if rst == nil || err != nil {
+    t.Error()
+  }
+  if len(rst) != 1 {
+    t.Error()
+  }
+  rst, err = conn.Exec("select missing")
+  if rst != nil || err == nil {
+    t.Error()
+  }
+  rst, err = conn.Exec("print 'pero'")
+  if err != nil || !strings.Contains(conn.Message, "pero") || len(rst) != 1 || len(rst[0].Rows) > 0 {
+    t.Error()
+  }
+  rst, err = conn.Exec("sp_help 'authors'")
+  if err != nil || len(rst) != 9 {
+    t.Error()
+  }
+}
+
+func TestRowsAffected(t *testing.T){
+  conn := ConnectToTestDb(t)
+  if conn == nil { return }
+  defer conn.Close()
+
+  rst, err := conn.Exec("select * from authors")
+  if err != nil || len(rst) != 1 || len(rst[0].Rows) != 23 || rst[0].RowsAffected != 23 {
+    t.Error()
+  }
+  rst, err = conn.Exec("update authors set zip = zip")
+  if err != nil || len(rst) != 1 || len(rst[0].Rows) > 0 || rst[0].RowsAffected != 23 {
+    t.Error()
+  }
+
+}
+
+func TestSelectValue(t *testing.T) {
+  conn := ConnectToTestDb(t)
+  if conn == nil { return }
+  defer conn.Close()
+
+  val, err := conn.SelectValue("select 1")
+  if val.(int32) != 1 || err != nil {
+    t.Error()
+  }
+  val, err = conn.SelectValue("select 1 where 1=2")
+  if val != nil || err == nil {
+    t.Error()
+  }
+  val, err = conn.SelectValue("select missing")
+  if val != nil || err == nil {
+    t.Error()
+  }
+}
+
+func TestMirroring(t *testing.T) {
+  conn := ConnectToTestDb(t)
+  if conn == nil { return }
+  defer conn.Close()
+
+  _, err := conn.Exec("select * from authors")
+  if err != nil {
+    t.Error()
+  }
+  failover(conn)
+  _, err = conn.Exec("use pubs; select * from authors")
+  fmt.Printf("error %s %s\n", err, conn.Message)
+  if err != nil {
+//    t.Error()
+  }
+
+}
+
+func failover(conn *Conn) {
+  conn.Exec("use master; ALTER DATABASE pubs SET PARTNER FAILOVER")
+}
+
+func BenchmarkConnectExecute(b *testing.B) {
+  for i := 0; i < 100; i++ {
+    conn := ConnectToTestDb(nil)
+    conn.Exec("select * from authors")
+    conn.Close()
   }
 }
 
