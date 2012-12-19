@@ -1,13 +1,14 @@
-gofreetds
-=========
+##gofreetds
 
-##Example
+Go FreeTDS wrapper.
+[FreeTDS](http://freetds.schemamania.org/) is a set of libraries for Unix and Linux that allows your programs to natively talk to Microsoft SQL Server and Sybase databases
+
+##Usage
 Connect:
 ```go
   conn, err := freetds.Connect("user", "pwd", host", "database")
   if err != nil {
-    fmt.Printf("error: %s\n%s\n%s", err, conn.Error, conn.Message)
-    return
+    ...
   }
   defer conn.Close()
 ```
@@ -15,8 +16,9 @@ Execute query:
 ```go
   rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
 ```
-rst is array of results. Each result has Columns and Rows array. Each
-row is array of values. Each column is array of ResultColumn objects.
+rst is array of results.
+Each result has Columns and Rows array.
+Each row is array of values. Each column is array of ResultColumn objects.
 
 ## Tests
 Tests depend on the pubs database.
