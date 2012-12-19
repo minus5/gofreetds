@@ -37,4 +37,4 @@ export GOFREETDS_PWD="ianic"
 export GOFREETDS_HOST="iow"
 export GOFREETDS_MIRROR_HOST="iow-mirror"
 ```
-Is you don't want to setup and test database mirroring do not define GOFREETDS_MIRROR_HOST. Those tests will bi skipped.
+Is you don't want to setup and test database mirroring do not define GOFREETDS_MIRROR_HOST. Those tests will be skipped.

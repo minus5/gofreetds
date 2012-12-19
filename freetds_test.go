@@ -57,6 +57,10 @@ func ConnectToTestDb(t *testing.T) (*Conn) {
   return conn
 }
 
+func IsMirrorHostDefined() bool {
+  return os.Getenv("GOFREETDS_MIRROR_HOST") != ""
+}
+
 func TestConnect(t *testing.T) {
   conn := ConnectToTestDb(t)
   if conn == nil { return }
@@ -222,6 +226,10 @@ func TestDbUse(t *testing.T) {
 }
 
 func TestMirroring(t *testing.T) {
+  if !IsMirrorHostDefined() {
+    fmt.Printf("skipping TestMirroring\n")
+    return
+  }
   conn := ConnectToTestDb(t)
   if conn == nil { return }
   defer conn.Close()
