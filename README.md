@@ -1,7 +1,18 @@
-##gofreetds
+##About
 
-Go FreeTDS wrapper.
-[FreeTDS](http://freetds.schemamania.org/) is a set of libraries for Unix and Linux that allows your programs to natively talk to Microsoft SQL Server and Sybase databases
+Go FreeTDS wrapper. Native Sql Server database driver.
+
+##Dependencies
+[FreeTDS](http://freetds.schemamania.org/) libraries must be installed on the system.
+
+Mac
+```shell
+  brew install freetds
+```
+Ubuntu, Debian...
+```shell
+  sudo apt-get install freetds
+```
 
 ##Usage
 Connect:
@@ -37,4 +48,4 @@ export GOFREETDS_PWD="ianic"
 export GOFREETDS_HOST="iow"
 export GOFREETDS_MIRROR_HOST="iow-mirror"
 ```
-Is you don't want to setup and test database mirroring do not define GOFREETDS_MIRROR_HOST. Those tests will be skipped.
+If you don't want to setup and test database mirroring than don't define GOFREETDS_MIRROR_HOST. Mirroring tests will be skipped.
