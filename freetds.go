@@ -60,7 +60,6 @@ type Conn struct {
   Error string
   Message string
   currentResult *Result
-  retries int
   user, pwd, host, database, mirrorHost string
  }
 
@@ -82,12 +81,12 @@ func (conn *Conn) addError(err string) {
 }
 
 func Connect(user, pwd, host, database string) (*Conn, error) {
-  conn := &Conn{user: user, pwd:pwd, host:host, database: database, retries: 1}
+  conn := &Conn{user: user, pwd:pwd, host:host, database: database}
   return conn.connect()
 }
 
 func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
-  conn := &Conn{user: user, pwd:pwd, host:host, database: database, retries: 1, mirrorHost: mirrorHost}
+  conn := &Conn{user: user, pwd:pwd, host:host, database: database, mirrorHost: mirrorHost}
   err := conn.reconnect()
   if err != nil {
     return nil, err
