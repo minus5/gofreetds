@@ -176,7 +176,7 @@ func (conn *Conn) Exec(sql string) ([]*Result, error) {
   }
   results, err := conn.exec(sql)
   if err != nil && conn.isDead() {
-    err := conn.reconnect()
+    err = conn.reconnect()
     if err != nil {
       return nil, err
     }

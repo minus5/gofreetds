@@ -131,12 +131,15 @@ func TestRetryOnKilledConnection(t *testing.T) {
   if conn1.IsLive() {
     t.Error()
   }
+  if !conn1.isDead() {
+    t.Error()
+  }
   _, err := conn1.exec("select * from authors")
   if err == nil {
     t.Error()
   }
-  _, err = conn1.Exec("select * from authors")
-  if err != nil {
+  rst, err := conn1.Exec("select * from authors")
+  if err != nil || len(rst) != 1 || len(rst[0].Rows) != 23 || rst[0].RowsAffected != 23 {
     t.Error()
   }
 }
@@ -240,7 +243,7 @@ func TestMirroring(t *testing.T) {
 
 func failover(conn *Conn) error {
   _, err := conn.Exec("use master; ALTER DATABASE pubs SET PARTNER FAILOVER")
-   return err
+  return err
 }
 
 func BenchmarkConnectExecute(b *testing.B) {
