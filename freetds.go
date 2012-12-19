@@ -4,6 +4,8 @@ import (
   "fmt"
   "errors"
   "unsafe"
+  "strings"
+//  "log"
  )
 
  /*
@@ -86,11 +88,17 @@ func Connect(user, pwd, host, database string) (*Conn, error) {
 
 func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
   conn := &Conn{user: user, pwd:pwd, host:host, database: database, retries: 1, mirrorHost: mirrorHost}
-  return conn.connect()
+  err := conn.reconnect()
+  if err != nil {
+    return nil, err
+  }
+  return conn, nil
 }
 
 func (conn *Conn) connect() (*Conn, error){
+//   log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
   conn.Close()
+  conn.clearMessages()
   dbproc, err := conn.getDbProc()
   if err != nil {
     return nil, err
@@ -98,6 +106,12 @@ func (conn *Conn) connect() (*Conn, error){
   conn.dbproc = dbproc
   conn.addr = int64(C.dbproc_addr(dbproc))
   connections[conn.addr] = conn
+  err = conn.DbUse()
+  if err != nil {
+    conn.Close()
+    return nil, err
+  }
+//  log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
   return conn, nil
 }
 
@@ -132,16 +146,19 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
   if dbproc == nil {
     return nil, errors.New("dbopen error")
   }
+  return dbproc, nil
+}
+
+func (conn *Conn) DbUse() error {
   if len(conn.database) > 0 {
     cdatabase := C.CString(conn.database)
     defer C.free(unsafe.Pointer(cdatabase))
-    erc = C.dbuse(dbproc, cdatabase)
+    erc := C.dbuse(conn.dbproc, cdatabase)
     if erc == C.FAIL {
-      C.dbclose(dbproc)
-      return nil, errors.New(fmt.Sprintf("unable to use to database %s", conn.database))
+      return errors.New(fmt.Sprintf("unable to use to database %s", conn.database))
     }
   }
-  return dbproc, nil
+  return nil
 }
 
 func (conn *Conn) clearMessages() {
@@ -150,21 +167,50 @@ func (conn *Conn) clearMessages() {
 }
 
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
-  if conn.retries == 0 {
-    return conn.exec(sql)
-  }
-  var err error
-  for i:=0; i<=conn.retries; i++ {
-    results, err := conn.exec(sql)
-    if !(err != nil && conn.isDead()) {
-      return results, err
-    }
-    _, err = conn.connect()
+  err := conn.DbUse()
+  if conn.IsMirrorMessage() {
+    err := conn.reconnect()
     if err != nil {
       return nil, err
     }
   }
-  return nil, err
+  results, err := conn.exec(sql)
+  if err != nil && conn.isDead() {
+    err := conn.reconnect()
+    if err != nil {
+      return nil, err
+    }
+    results, err = conn.exec(sql)
+  }
+  return results, err
+}
+
+func (conn *Conn) reconnect() error {
+  var err error
+  for i:=0; i<2; i++ {
+    if conn.IsMirrorMessage() {
+      conn.switchMirror()
+    }
+    _, err = conn.connect()
+  }
+  return err
+}
+
+func (conn *Conn) mirrorDefined() bool {
+  return len(conn.mirrorHost) > 0
+}
+
+func (conn *Conn) IsMirrorMessage() bool {
+  return strings.Contains(conn.Message, "It is acting as a mirror database")
+}
+
+func (conn *Conn) switchMirror() {
+  if len(conn.mirrorHost) == 0 {
+    return
+  }
+  tmp := conn.host
+  conn.host = conn.mirrorHost
+  conn.mirrorHost = tmp
 }
 
 func (conn *Conn) exec(sql string) ([]*Result, error) {

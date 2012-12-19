@@ -1,6 +1,6 @@
 package freetds
 
-import ("log"; "fmt")
+import ("fmt")
 
 /*
 #include <sybfront.h>
@@ -24,7 +24,7 @@ func ErrHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
   if connections[int64(dbprocAddr)] != nil {
     connections[int64(dbprocAddr)].Error = err
   }
-  log.Printf("%s", err)
+//  log.Printf("%s", err)
   return C.INT_CANCEL
 }
 
@@ -60,6 +60,6 @@ func MsgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
     connections[int64(dbprocAddr)].Message = msg
   }
 
-  log.Printf("%s", msg)
+//  log.Printf("%s", msg)
   return 0
 }

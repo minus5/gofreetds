@@ -112,11 +112,11 @@ func TestReading(t *testing.T) {
   defer conn.Close()
 
   results, err := conn.Exec("select * from freetds_types")
-  if err != nil {
+  if err != nil || len(results) != 1 {
     fmt.Printf("error: %s\n%s\n%s", err, conn.Message, conn.Error)
     return
   }
-  PrintResults(results)
+  //PrintResults(results)
 }
 
 func TestRetryOnKilledConnection(t *testing.T) {
@@ -202,26 +202,45 @@ func TestSelectValue(t *testing.T) {
   }
 }
 
+func TestDbUse(t *testing.T) {
+  conn := ConnectToTestDb(t)
+  if conn == nil { return }
+  defer conn.Close()
+
+  err := conn.DbUse()
+  if err != nil {
+    t.Error()
+  }
+  conn.database = "missing"
+  err = conn.DbUse()
+  if err == nil && !strings.Contains(err.Error(), "unable to use database missing") {
+    t.Error()
+  }
+}
+
 func TestMirroring(t *testing.T) {
   conn := ConnectToTestDb(t)
   if conn == nil { return }
   defer conn.Close()
 
-  _, err := conn.Exec("select * from authors")
-  if err != nil {
+  rst, err := conn.Exec("select * from authors")
+  if err != nil && rst != nil && len(rst) == 1 && len(rst[0].Rows) == 23 {
     t.Error()
   }
-  failover(conn)
-  _, err = conn.Exec("use pubs; select * from authors")
-  fmt.Printf("error %s %s\n", err, conn.Message)
+  err = failover(conn)
   if err != nil {
-//    t.Error()
+    fmt.Printf("failover error %s %s %s\n", err, conn.Error, conn.Message)
+    t.Error()
   }
-
+  rst, err = conn.Exec("select * from authors")
+  if err != nil && rst != nil && len(rst) == 1 && len(rst[0].Rows) == 23 {
+    t.Error()
+  }
 }
 
-func failover(conn *Conn) {
-  conn.Exec("use master; ALTER DATABASE pubs SET PARTNER FAILOVER")
+func failover(conn *Conn) error {
+  _, err := conn.Exec("use master; ALTER DATABASE pubs SET PARTNER FAILOVER")
+   return err
 }
 
 func BenchmarkConnectExecute(b *testing.B) {
