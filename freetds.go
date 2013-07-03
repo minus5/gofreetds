@@ -49,6 +49,11 @@ import (
   return (long) dbproc;
  }
 
+ // dbfcmd's last param is ... (variadic), so we have to wrap it
+ RETCODE mydbfcmd(DBPROCESS * dbproc, const char *fmt) {
+	return dbfcmd(dbproc, fmt);
+ }
+
  */
 import "C"
 
@@ -214,7 +219,7 @@ func (conn *Conn) switchMirror() {
 
 func (conn *Conn) exec(sql string) ([]*Result, error) {
   conn.clearMessages()
-  if C.dbfcmd(conn.dbproc, C.CString(sql)) == C.FAIL {
+  if C.mydbfcmd(conn.dbproc, C.CString(sql)) == C.FAIL {
     return nil, errors.New("dbfcmd failed")
   }
   if C.dbsqlexec(conn.dbproc) == C.FAIL {
