@@ -205,7 +205,8 @@ func (conn *Conn) mirrorDefined() bool {
 }
 
 func (conn *Conn) IsMirrorMessage() bool {
-  return strings.Contains(conn.Message, "It is acting as a mirror database")
+  return strings.Contains(conn.Message, "It is acting as a mirror database") ||
+		strings.Contains(conn.Message, "It is in the middle of a restore")
 }
 
 func (conn *Conn) switchMirror() {
