@@ -4,9 +4,10 @@ import ("gofreetds";"fmt")
 
 func main() {
   //conect
-  conn, err := freetds.Connect("ianic", "ianic", "iow", "pubs")
+  //conn, err := freetds.Connect("ianic", "ianic", "iow", "pubs")
+	conn, err := freetds.ConnectWithConnectionString("user=ianic;pwd=ianic;database=pubs;host=iow")
   if err != nil {
-    fmt.Printf("error: %s\n%s\n%s", err, conn.Error, conn.Message)
+    fmt.Printf("error: %s", err)
     return
   }
   defer conn.Close()
@@ -29,4 +30,5 @@ func main() {
     }
     fmt.Printf("\n")
   }
+
 }

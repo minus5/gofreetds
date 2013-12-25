@@ -59,13 +59,17 @@ import "C"
 
 var connections map[int64]*Conn = make(map[int64]*Conn)
 
+type credentials struct{
+	user, pwd, host, database, mirrorHost string
+}
+
 type Conn struct {
   dbproc *C.DBPROCESS
   addr int64
   Error string
   Message string
   currentResult *Result
-  user, pwd, host, database, mirrorHost string
+	credentials 	
  }
 
 func (conn *Conn) addMessage(msg string) {
@@ -86,12 +90,19 @@ func (conn *Conn) addError(err string) {
 }
 
 func Connect(user, pwd, host, database string) (*Conn, error) {
-  conn := &Conn{user: user, pwd:pwd, host:host, database: database}
-  return conn.connect()
+	return connectWithCredentials(&credentials{user: user, pwd:pwd, host:host, database: database}) 
 }
 
 func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
-  conn := &Conn{user: user, pwd:pwd, host:host, database: database, mirrorHost: mirrorHost}
+	return connectWithCredentials(&credentials{user: user, pwd:pwd, host:host, database: database, mirrorHost: mirrorHost})
+}
+
+func ConnectWithConnectionString(connStr string) (*Conn, error) {
+	return connectWithCredentials(parseConnectionString(connStr))
+}
+
+func connectWithCredentials(crd *credentials) (*Conn, error) {
+	conn := &Conn{credentials: *crd}
   err := conn.reconnect()
   if err != nil {
     return nil, err
@@ -255,24 +266,6 @@ func (conn *Conn) IsLive() bool {
     }
   }
   return false
-}
-
-func PrintResults(results []*Result) {
-  fmt.Printf("results %v", results)
-  for _, r := range results {
-    fmt.Printf("\n\nColums:\n")
-    for j, c := range r.Columns {
-      fmt.Printf("\t%3d%20s%10d%10d\n", j, c.Name, c.DbType, c.DbSize)
-    }
-    for i, _ := range r.Rows {
-      for j, _ := range r.Columns {
-        fmt.Printf("value[%2d, %2d]: %v\n", i, j, r.Rows[i][j])
-      }
-      fmt.Printf("\n")
-    }
-    fmt.Printf("rows affected: %d\n", r.RowsAffected)
-    fmt.Printf("return value: %d\n", r.ReturnValue)
-  }
 }
 
 func (conn *Conn) SelectValue(sql string) (interface{}, error){
