@@ -4,11 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
-	"strings"
-	"fmt"
 	"io"
-	"log"
-	"time"
 )
 
 func init() {
@@ -37,7 +33,8 @@ func (c *TdsConn) Prepare(query string) (driver.Stmt, error) {
 } 
 
 func (c *TdsConn) Close() error {
-	return errNotImplemented
+	c.conn.Close()
+	return nil
 }
 
 func (c *TdsConn) Begin() (driver.Tx, error) {
@@ -45,28 +42,19 @@ func (c *TdsConn) Begin() (driver.Tx, error) {
 }
 
 func NewTdsStmt(query string, c *Conn) *TdsStmt {
-	parts := strings.Split(query, "?")
-	var statement string
-	numInput := len(parts) - 1
-	statement = parts[0]
-	for i, part := range parts {
-		if i > 0 {
-			statement = fmt.Sprintf("%s@p%d%s", statement, i, part)
-		}
-	}
-	s := &TdsStmt{query: query, statement: statement, numInput: numInput, conn: c}
+	_, numInput := query2Statement(query)
+	s := &TdsStmt{query: query, numInput: numInput, conn: c}
 	return s
 }
 
 type TdsStmt struct {
 	query string
-	statement string
 	numInput int
 	conn *Conn
 }
 
 func (s *TdsStmt) Close() error {
-	return errNotImplemented
+	return nil
 }
 
 func (s *TdsStmt) NumInput() int {
@@ -74,64 +62,28 @@ func (s *TdsStmt) NumInput() int {
 }
 
 func (s *TdsStmt) Exec(args []driver.Value) (driver.Result, error) {
-	return nil, errNotImplemented
+	results, err := s.conn.ExecuteSql(s.query, toInterfaceA(args)...)
+	if err != nil {
+		return nil, err
+	}
+	return &TdsResult{results: results}, nil
 }
 
 func (s *TdsStmt) Query(args []driver.Value) (driver.Rows, error) {
-	paramDef := ""
-	params := ""
+	results, err := s.conn.ExecuteSql(s.query, toInterfaceA(args)...)
+	if err != nil {
+		return nil, err
+	}
+	return &TdsRows{results: results}, nil
+}
+
+//FIXME - cast from []driver.Value to []interface{}, must be better way
+func toInterfaceA(args[]driver.Value) []interface{} {
+	args2 := make([]interface{}, len(args))
 	for i, arg := range args {
-		if i > 0 {
-			params += ", "
-			paramDef += ", "
-		}
-		sqlType, sqlValue := go2SqlDataType(arg)
-		paramName := fmt.Sprintf("@p%d", i+1)
-		paramDef += fmt.Sprintf("%s %s", paramName, sqlType)
-		params += fmt.Sprintf("%s=%s", paramName, sqlValue)
+		args2[i]= arg
 	}
-	sql := fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", quote(s.statement), paramDef, params)
-	results, err := s.conn.Exec(sql)
-	if err == nil {
-		return &TdsRows{results: results}, nil
-	}
-	return nil, err
-}
-
-func quote(in string) string {
-	return strings.Replace(in, "'", "''", -1)
-}
-
-func go2SqlDataType(value interface{}) (string, string) {
-	strValue := fmt.Sprintf("%v", value)
-	switch t := value.(type) { 
-	case uint8, int8:
-		return "tinyint", strValue
-	case uint16, int16:
-		return "smallint", strValue
-	case uint32, int32, int:
-		return "int", strValue
-	case uint64, int64:
-		return "bigint", strValue
-	case float32, float64:
-		return "real", strValue
-	case string: {
-	}
-	case time.Time: {
-		t, _ := value.(time.Time)
-		strValue = t.Format(time.RFC3339)
-	}
-	case []byte: {
-		b, _ := value.([]byte)
-		return fmt.Sprintf("varbinary (%d)", len(b)), 
-		fmt.Sprintf("0x%x", b)
-	}
-	default: 
-		log.Printf("unknown dataType %t", t)
-	}
-	return fmt.Sprintf("nvarchar (%d)", len(strValue)), 
-	fmt.Sprintf("'%s'", quote(strValue))
-
+	return args2
 }
 
 type TdsRows struct {
@@ -145,10 +97,10 @@ func (r *TdsRows) Columns() []string {
 		cols[i] = c.Name
 	}
 	return cols
-}
+} 
 
 func (r *TdsRows) Close() error {
-	return errNotImplemented
+	return nil
 }
 
 func (r *TdsRows) Next(dest []driver.Value) error {
@@ -165,3 +117,39 @@ func (r *TdsRows) Next(dest []driver.Value) error {
 	return nil
 }
 
+type TdsResult struct {
+	results []*Result 
+}
+
+func (r *TdsResult) RowsAffected() (int64, error){
+	val := r.statusRowValue("rows_affected")
+	if val == -1 {
+		return 0, errors.New("no RowsAffected available")
+	} 
+	return val, nil
+}
+
+func (r *TdsResult) LastInsertId() (int64, error){
+	val := r.statusRowValue("last_insert_id")
+	if val == -1 {
+		return 0, errors.New("no LastInsertId available")
+	} 
+	return val, nil
+}
+
+func (r *TdsResult) statusRowValue(columnName string) int64 {
+	lastResult := r.results[len(r.results) -1]
+	idx := -1
+	for i, col := range lastResult.Columns {
+		if columnName == col.Name {
+			idx = i
+			break
+		}
+	}
+	if idx >= 0 {
+		if val, ok := lastResult.Rows[0][idx].(int64); ok  {
+			return val
+		}
+	}
+	return -1
+}

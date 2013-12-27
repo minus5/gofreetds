@@ -30,20 +30,22 @@ func parseConnectionString(connStr string) *credentials {
 	return crd
 }
 
-//usefull for testing 
+//usefull for testing n
 func PrintResults(results []*Result) {
   fmt.Printf("results %v", results)
   for _, r := range results {
-    fmt.Printf("\n\nColums:\n")
-    for j, c := range r.Columns {
-      fmt.Printf("\t%3d%20s%10d%10d\n", j, c.Name, c.DbType, c.DbSize)
-    }
-    for i, _ := range r.Rows {
-      for j, _ := range r.Columns {
-        fmt.Printf("value[%2d, %2d]: %v\n", i, j, r.Rows[i][j])
-      }
-      fmt.Printf("\n")
-    }
+		if r.Rows != nil {
+			fmt.Printf("\n\nColums:\n")
+			for j, c := range r.Columns {
+				fmt.Printf("\t%3d%20s%10d%10d\n", j, c.Name, c.DbType, c.DbSize)
+			}
+			for i, _ := range r.Rows {
+				for j, _ := range r.Columns {
+					fmt.Printf("value[%2d, %2d]: %v\n", i, j, r.Rows[i][j])
+				}
+				fmt.Printf("\n")
+			}
+		}
     fmt.Printf("rows affected: %d\n", r.RowsAffected)
     fmt.Printf("return value: %d\n", r.ReturnValue)
   }

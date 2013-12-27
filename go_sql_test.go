@@ -4,8 +4,6 @@ import (
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"database/sql"
-	"log" 
-	"time"
 )
 
 func open() (*sql.DB, error) {
@@ -17,7 +15,6 @@ func TestGoSqlOpenConnection(t *testing.T) {
 	if err != nil || db == nil {
 		t.Error(err) 
 	}
-	log.Printf("db %V", db)
 }
 
 func TestGoSqlDbQueryRow(t *testing.T) {
@@ -63,39 +60,50 @@ func TestGoSqlPrepareQuery(t *testing.T) {
 	testRingers(t, rows)
 }
 
-func TestNewTdsStmt(t *testing.T) {
-	stmt := NewTdsStmt("select 1", nil)
-	assert.Equal(t, stmt.numInput, 0)
-	assert.Equal(t, stmt.statement, "select 1")
 
-	stmt = NewTdsStmt("select 1 where 2 = ?", nil)
-	assert.Equal(t, stmt.numInput, 1)
-	assert.Equal(t, stmt.statement, "select 1 where 2 = @p1")
-
-	stmt = NewTdsStmt("select 1 where 2 = ? and 3 = ?", nil)
-	assert.Equal(t, stmt.numInput, 2)
-	assert.Equal(t, stmt.statement, "select 1 where 2 = @p1 and 3 = @p2")
-}
-
-
-func TestGoTo2SqlDataType(t *testing.T) {
-	var checker = func(value interface{}, sqlType string, sqlFormatedValue string) {
-		actualSqlType, actualSqlFormatedValue := go2SqlDataType(value)
-		assert.Equal(t, actualSqlType, sqlType)
-		assert.Equal(t, actualSqlFormatedValue, sqlFormatedValue)
-	}
-
-	checker(123, "int", "123")
-	checker(int64(123), "bigint", "123")
-	checker(int8(123), "tinyint", "123")
-	checker(123.23, "real", "123.23")
-	checker(float64(123.23), "real", "123.23")
-
-	checker("iso medo", "nvarchar (8)", "'iso medo'")
-	checker("iso medo isn't", "nvarchar (14)", "'iso medo isn''t'")
+func TestLastInsertIdRowsAffected(t *testing.T) {
+	db, _ := open()
+	db.Exec(`
+	if exists(select * from sys.tables where name = 'test_last_insert_id')
+	  drop table test_last_insert_id
+	;
+  create table test_last_insert_id (
+	  id int not null identity,
+	  name varchar(255) 
+  ) 
+  `)
+	r, err := db.Exec("insert into test_last_insert_id values(?)", "pero")
+	assert.Nil(t, err)
+	assert.NotNil(t, r) 
+	id, err := r.LastInsertId()
+	assert.Nil(t, err)
+	assert.Equal(t, id, 1)
+	ra, err := r.RowsAffected()
+	assert.Nil(t, err)
+	assert.Equal(t, ra, 1)
 	
-	tm := time.Unix(1136239445, 0)
-	checker(tm, "nvarchar (25)", "'2006-01-02T23:04:05+01:00'")
+	r, err = db.Exec("insert into test_last_insert_id values(?)", "pero")
+	assert.Nil(t, err)
+	assert.NotNil(t, r) 
+	id, err = r.LastInsertId()
+	assert.Nil(t, err)
+	assert.Equal(t, id, 2)
+	ra, err = r.RowsAffected()
+	assert.Nil(t, err)
+	assert.Equal(t, ra, 1)
+	
+	r, err = db.Exec("update test_last_insert_id set name = ?", "jozo")
+	assert.Nil(t, err)
+	assert.NotNil(t, r) 
+	id, err = r.LastInsertId() 
+	assert.NotNil(t, err)
+	ra, err = r.RowsAffected()
+	assert.Nil(t, err)
+	assert.Equal(t, ra, 2)
 
-	checker([]byte{1,2,3,4,5,6,7,8}, "varbinary (8)", "0x0102030405060708")
+	r, err = db.Exec("delete from test_last_insert_id")
+	assert.Nil(t, err)
+	ra, err = r.RowsAffected()
+	assert.Nil(t, err)
+	assert.Equal(t, ra, 2)
 }
