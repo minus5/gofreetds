@@ -106,7 +106,7 @@ func connectWithCredentials(crd *credentials) (*Conn, error) {
 
 func (conn *Conn) connect() (*Conn, error){
 //   log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
-  conn.Close()
+  conn.close()
   conn.clearMessages()
   dbproc, err := conn.getDbProc()
   if err != nil {
@@ -117,14 +117,14 @@ func (conn *Conn) connect() (*Conn, error){
   connections[conn.addr] = conn
   err = conn.DbUse()
   if err != nil {
-    conn.Close()
+    conn.close()
     return nil, err
   }
 //  log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
   return conn, nil
 }
 
-func (conn *Conn) Close() {
+func (conn *Conn) close() {
   delete(connections, conn.addr)
   if conn.dbproc != nil {
     C.dbclose(conn.dbproc)
@@ -176,7 +176,7 @@ func (conn *Conn) clearMessages() {
 }
 
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
-  err := conn.DbUse()
+  //err := conn.DbUse()
   if conn.IsMirrorMessage() {
     err := conn.reconnect()
     if err != nil {

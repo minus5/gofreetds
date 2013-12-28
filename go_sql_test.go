@@ -4,10 +4,11 @@ import (
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"database/sql"
+	"strings"
 )
 
 func open() (*sql.DB, error) {
-	return sql.Open("freetds", "user=ianic;pwd=ianic;database=pubs;host=iow")
+	return sql.Open("mssql", "user=ianic;pwd=ianic;database=pubs;host=iow")
 }
 
 func TestGoSqlOpenConnection(t *testing.T) {
@@ -102,8 +103,57 @@ func TestLastInsertIdRowsAffected(t *testing.T) {
 	assert.Equal(t, ra, 2)
 
 	r, err = db.Exec("delete from test_last_insert_id")
-	assert.Nil(t, err)
+	assert.Nil(t, err) 
 	ra, err = r.RowsAffected()
 	assert.Nil(t, err)
 	assert.Equal(t, ra, 2)
+}
+
+func createTestTable(t *testing.T, db *sql.DB, name string) {
+	sql := `
+	if exists(select * from sys.tables where name = 'table_name')
+	  drop table table_name
+	;
+  create table table_name (
+	  id int not null identity,
+	  name varchar(255) 
+  ) 
+  `
+	sql = strings.Replace(sql, "table_name", name, 3) 
+	_, err := db.Exec(sql)	
+	assert.Nil(t, err)
+}
+
+func TestTransCommit(t *testing.T) {
+	db, _ := open()
+	createTestTable(t, db, "test_tran")
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+	tx.Exec("insert into test_tran values(?)", "pero")
+	tx.Exec("insert into test_tran values(?)", "jozo")
+	err = tx.Commit()
+	assert.Nil(t, err)
+	row := db.QueryRow("select count(*)  from test_tran")
+	assert.Nil(t, err)
+	var count int
+	err = row.Scan(&count)	
+	assert.Nil(t, err) 
+	assert.Equal(t, count, 2)
+}
+
+func TestTransRollback(t *testing.T) {
+	db, _ := open()
+	createTestTable(t, db, "test_tran")
+	tx, err := db.Begin()
+	assert.Nil(t, err)
+	tx.Exec("insert into test_tran values(?)", "pero")
+	tx.Exec("insert into test_tran values(?)", "jozo")
+	err = tx.Rollback()
+	assert.Nil(t, err)
+	row := db.QueryRow("select count(*)  from test_tran")
+	assert.Nil(t, err)
+	var count int
+	err = row.Scan(&count)	
+	assert.Nil(t, err) 
+	assert.Equal(t, count, 0)
 }

@@ -1,6 +1,7 @@
 package freetds
 
 import (
+	"database/sql/driver"
 	"strings"
 	"fmt"
 	"errors"
@@ -17,7 +18,7 @@ const statusRow string =
 //execute sql query with arguments
 //? in query are arguments placeholders
 //ExecuteSql("select * from authors where au_fname = ?", "John")
-func (c *Conn) ExecuteSql(query string, params ...interface{}) ([]*Result, error) {
+func (c *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
 		return nil, errors.New(fmt.Sprintf("Incorect number of params, expecting %d got %d", numParams, len(params)))
@@ -47,7 +48,7 @@ func query2Statement(query string) (string, int) {
 	return quote(statement), numParams
 }
 
-func parseParams(params ...interface{}) (paramDef, paramVal string) {
+func parseParams(params ...driver.Value) (paramDef, paramVal string) {
 	paramDef = ""
 	paramVal = ""
 	for i, param := range params {
