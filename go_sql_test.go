@@ -5,6 +5,7 @@ import (
 	"testing"
 	"database/sql"
 	"strings"
+	"fmt"
 )
 
 func open() (*sql.DB, error) {
@@ -64,15 +65,16 @@ func TestGoSqlPrepareQuery(t *testing.T) {
 
 func TestLastInsertIdRowsAffected(t *testing.T) {
 	db, _ := open()
-	db.Exec(`
-	if exists(select * from sys.tables where name = 'test_last_insert_id')
-	  drop table test_last_insert_id
-	;
-  create table test_last_insert_id (
-	  id int not null identity,
-	  name varchar(255) 
-  ) 
-  `)
+	createTestTable(t, db, "test_last_insert_id", "") 
+	// db.Exec(`
+	// if exists(select * from sys.tables where name = 'test_last_insert_id')
+	//   drop table test_last_insert_id
+	// ;
+  // create table test_last_insert_id (
+	//   id int not null identity,
+	//   name varchar(255) 
+  // ) 
+  // `)
 	r, err := db.Exec("insert into test_last_insert_id values(?)", "pero")
 	assert.Nil(t, err)
 	assert.NotNil(t, r) 
@@ -109,16 +111,18 @@ func TestLastInsertIdRowsAffected(t *testing.T) {
 	assert.Equal(t, ra, 2)
 }
 
-func createTestTable(t *testing.T, db *sql.DB, name string) {
-	sql := `
+func createTestTable(t *testing.T, db *sql.DB, name string, columDef string) {
+	if columDef == "" {
+		columDef =  "id int not null identity,  name varchar(255)"
+	}
+	sql := fmt.Sprintf(`
 	if exists(select * from sys.tables where name = 'table_name')
 	  drop table table_name
 	;
   create table table_name (
-	  id int not null identity,
-	  name varchar(255) 
+    %s
   ) 
-  `
+  `, columDef)
 	sql = strings.Replace(sql, "table_name", name, 3) 
 	_, err := db.Exec(sql)	
 	assert.Nil(t, err)
@@ -126,7 +130,7 @@ func createTestTable(t *testing.T, db *sql.DB, name string) {
 
 func TestTransCommit(t *testing.T) {
 	db, _ := open()
-	createTestTable(t, db, "test_tran")
+	createTestTable(t, db, "test_tran", "")
 	tx, err := db.Begin()
 	assert.Nil(t, err)
 	tx.Exec("insert into test_tran values(?)", "pero")
@@ -143,7 +147,7 @@ func TestTransCommit(t *testing.T) {
 
 func TestTransRollback(t *testing.T) {
 	db, _ := open()
-	createTestTable(t, db, "test_tran")
+	createTestTable(t, db, "test_tran", "")
 	tx, err := db.Begin()
 	assert.Nil(t, err)
 	tx.Exec("insert into test_tran values(?)", "pero")
@@ -156,4 +160,22 @@ func TestTransRollback(t *testing.T) {
 	err = row.Scan(&count)	
 	assert.Nil(t, err) 
 	assert.Equal(t, count, 0)
+}
+
+func TestBlobs(t *testing.T) {
+	db, _ := open()
+	createTestTable(t, db, "test_blobs", "id int identity, blob varbinary(16)") 
+	want := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+	_, err := db.Exec("insert into test_blobs values(?)", want) 
+	assert.Nil(t, err)
+
+	var got []byte
+	err = db.QueryRow("select blob from test_blobs").Scan(&got)
+	assert.Nil(t, err)
+	assert.Equal(t, 16, len(got))
+
+	strWant := fmt.Sprintf("%x", want)
+	strGot := fmt.Sprintf("%x", got)
+	assert.Equal(t, strWant, strGot)
+	assert.Equal(t, want, got)
 }

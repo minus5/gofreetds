@@ -160,10 +160,10 @@ func (col *column) Value() interface{}{
     return value
   case C.SYBBIT:
     return col.buffer[0] == 1
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
-    return append([]byte{},  col.buffer...) // make copy of col.buffer
+  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY: 
+    return append([]byte{},  col.buffer[:col.size]...) // make copy of col.buffer
 
-    //TODO - decimal i numeric datatypes
+    //TODO - decimal & numeric datatypes
   }
   return nil
 }
