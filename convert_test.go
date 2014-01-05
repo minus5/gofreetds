@@ -7,32 +7,6 @@ import (
 	"fmt"
 )
 
-const (
-//name               database type   go type
-	SYBINT1 = 48       //tinyint       uint8
-	SYBINT2 = 52       //smallint      int16
-	SYBINT4 = 56       //int           int32
-	SYBINT8 = 127      //bigint        int64
-
-	SYBCHAR = 47
-	SYBVARCHAR = 39    //nvarchar      string
-	SYBNVARCHAR = 103  //nvarchar      string
-
-	SYBREAL = 59       //real          float32
-	SYBFLT8 = 62       //float(53)     float64
-	SYBBIT = 50        //bit           bool
-
-	SYBMONEY4 = 122    //smallmoney    float64
-	SYBMONEY = 60      //money         float64
-
-	SYBDATETIME = 61   //datetime      time.Time
-	SYBDATETIME4 = 58  //smalldatetime time.Time
-
-	SYBIMAGE = 34      //image         []byte
-	SYBBINARY = 45     //binary        []byte
-	SYBVARBINARY = 37  //varbinary     []byte
-)
-
 func TestInt(t *testing.T) {
 	testToSqlToType(t, SYBINT4, 2147483647)
 	testToSqlToType(t, SYBINT4, -2147483648)

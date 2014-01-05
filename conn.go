@@ -279,14 +279,17 @@ func (conn *Conn) execSp(spName string, params ...interface{}) ([]*Result, int, 
 	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
 		return nil, -1, errors.New("dbrpcinit failed")
 	}
-	if len(params) == 1 {
-		//conn.getSpParams(spName)
-		
-		datalen, datavalue, err := toRpcParam(C.SYBINT4, params[0])
+	spParams, err := conn.getSpParams(spName)
+	if err != nil {
+		return nil, -1, err
+	}
+	for i, param := range params {
+		spParam := spParams[i]
+		datalen, datavalue, err := toRpcParam(int(spParam.UserTypeId), param)
 		if err != nil {
 			return nil, -1, err
 		}
-		if C.dbrpcparam(conn.dbproc, C.CString("@p1"), C.BYTE(0), C.SYBINT4, 0, datalen, datavalue) == C.FAIL {
+		if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), C.BYTE(0), C.int(spParam.UserTypeId), 0, datalen, datavalue) == C.FAIL {
 		 	return nil, -1, errors.New("dbrpcparam failed")
 		}
 	}
@@ -312,9 +315,19 @@ func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.
 	return
 }
 
+type spParam struct {
+	Name string
+	ParameterId int32
+	UserTypeId int32
+	IsOutput bool
+	MaxLength int16
+	Precision uint8
+	Scale uint8
+}
 
-func (conn *Conn) getSpParams(spName string) (*Result, error) {
-	sql := fmt.Sprintf(`select name, parameter_id, user_type_id, is_output, max_length, precision, scale
+func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
+	sql := fmt.Sprintf(`
+select name, parameter_id, user_type_id, is_output, max_length, precision, scale
 	                    from sys.parameters
 	                    where object_id = object_id('%s')
 	                    order by parameter_id`, spName)
@@ -322,6 +335,15 @@ func (conn *Conn) getSpParams(spName string) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	PrintResults(results)
-	return results[0], nil
+	r := results[0]
+	spParams := make([]*spParam, len(r.Rows))
+	for i:=0; r.Next(); i++ {
+		p := &spParam{}
+		err := r.Scan(&p.Name, &p.ParameterId, &p.UserTypeId, &p.IsOutput, &p.MaxLength, &p.Precision, &p.Scale)
+		if err != nil {
+			return nil, err
+		}
+		spParams[i] = p
+	}
+	return spParams, nil
 }

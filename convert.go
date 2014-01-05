@@ -15,8 +15,34 @@ import (
 */
 import "C"
 
+const (
+	//name               database type   go type
+	SYBINT1 = 48       //tinyint       uint8
+	SYBINT2 = 52       //smallint      int16
+	SYBINT4 = 56       //int           int32
+	SYBINT8 = 127      //bigint        int64
+
+	SYBCHAR = 47
+	SYBVARCHAR = 39    //nvarchar      string
+	SYBNVARCHAR = 103  //nvarchar      string
+
+	SYBREAL = 59       //real          float32
+	SYBFLT8 = 62       //float(53)     float64
+	SYBBIT = 50        //bit           bool
+
+	SYBMONEY4 = 122    //smallmoney    float64
+	SYBMONEY = 60      //money         float64
+
+	SYBDATETIME = 61   //datetime      time.Time
+	SYBDATETIME4 = 58  //smalldatetime time.Time
+
+	SYBIMAGE = 34      //image         []byte
+	SYBBINARY = 45     //binary        []byte
+	SYBVARBINARY = 37  //varbinary     []byte
+	XSYBVARBINARY = 165//varbinary     []byte
+)
+
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-var secondsBetweenUnixTime = 2208988800 //seconds between 1900-01-01 an 1970-01-01
 
 func sqlBufToType(datatype int, data []byte) interface{} {
 	buf := bytes.NewBuffer(data)
@@ -199,7 +225,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
 		}
 	}
-	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY: 
+	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY, XSYBVARBINARY:
 		if typedValue, ok := value.([]byte); ok {
 			data = append(typedValue, []byte{0}[0])
 			return
