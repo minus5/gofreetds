@@ -47,7 +47,12 @@ func TestExecSpInputParams(t *testing.T) {
 	assert.Equal(t, 246, status)
 }
 
-
+func TestGetSpParams(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	 _, err := conn.getSpParams("test_input_params")
+	assert.Nil(t, err)
+	//PrintResults(rst)
+}
 
 func createProcedure(conn *Conn, name, body string) error {
 	drop := `

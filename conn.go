@@ -6,8 +6,6 @@ import (
   "unsafe"
   "strings"
 //	"log"
-	"encoding/binary"
-	"bytes"
 )
 
 /*
@@ -304,32 +302,13 @@ func (conn *Conn) execSp(spName string, params ...interface{}) ([]*Result, int, 
 }
 
 
-func toRpcParam(datatype C.int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
-	buf := new(bytes.Buffer)
-	switch datatype {
-	case C.SYBINT4: {
-		var int32Value int32
-		switch value.(type) { 
-		case int: {
-			intValue, _ := value.(int)
-			int32Value = int32(intValue)
-		}
-		case int32: 
-			int32Value, _ = value.(int32)
-		case int64: 
-			intValue, _ := value.(int64)
-			int32Value = int32(intValue)
-		default: {
-			err = errors.New("failed to convert to int32")
-			return
-		}
-		}
-		err = binary.Write(buf, binary.LittleEndian, int32Value)
+func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
+	data, err := typeToSqlBuf(datatype, value)
+	if err != nil {
+		return
 	}
-	}
-	byt := buf.Bytes()
-	datavalue =  (*C.BYTE)(unsafe.Pointer(&byt[0]))
-	datalen = C.DBINT(len(byt))
+	datavalue =  (*C.BYTE)(unsafe.Pointer(&data[0]))
+	datalen = C.DBINT(len(data))
 	return
 }
 
