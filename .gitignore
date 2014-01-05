@@ -22,3 +22,4 @@ _testmain.go
 *.exe
 /example/example
 /gofreetds.test
+/example/sqlx

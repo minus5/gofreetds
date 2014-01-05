@@ -42,11 +42,16 @@ func (s *Stmt) Query(args []driver.Value) (driver.Rows, error) {
 type QueryRows struct {
 	results []*Result 
 	currentRow int
+	currentResult int
+}
+
+func (r QueryRows) result() *Result{
+	return r.results[r.currentResult]
 }
 
 func (r *QueryRows) Columns() []string {
-	cols := make([]string, len(r.results[0].Columns))
-	for i, c := range r.results[0].Columns {
+	cols := make([]string, len(r.result().Columns))
+	for i, c := range r.result().Columns {
 		cols[i] = c.Name
 	}
 	return cols
@@ -60,14 +65,24 @@ func (r *QueryRows) Next(dest []driver.Value) error {
 	if len(r.results) == 0 {
 		return io.EOF
 	}
-	if r.currentRow >= len(r.results[0].Rows) {
+	if r.currentRow >= len(r.result().Rows) {
 		return io.EOF
 	}
 	for i, _ := range dest {
-		dest[i] = r.results[0].Rows[r.currentRow][i]
+		dest[i] = r.result().Rows[r.currentRow][i]
 	}
 	r.currentRow++
 	return nil
+}
+
+//true and move to next result if exists
+func (r *QueryRows) MoreResults() bool {
+	//last result is statusRow, because of that -2
+	if r.currentResult >= len(r.results) - 2 {
+		r.currentResult++
+		return true
+	}
+	return false
 }
 
 

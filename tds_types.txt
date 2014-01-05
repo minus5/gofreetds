@@ -1,0 +1,44 @@
+    SYBCHAR = 47,       /* 0x2F */
+    SYBVARCHAR = 39,    /* 0x27 */
+    SYBINTN = 38,       /* 0x26 */
+    SYBINT1 = 48,       /* 0x30 */
+    SYBINT2 = 52,       /* 0x34 */
+    SYBINT4 = 56,       /* 0x38 */
+    SYBINT8 = 127,      /* 0x7F */
+    SYBFLT8 = 62,       /* 0x3E */
+    SYBDATETIME = 61,   /* 0x3D */
+    SYBBIT = 50,        /* 0x32 */
+    SYBTEXT = 35,       /* 0x23 */
+    SYBNTEXT = 99,      /* 0x63 */
+    SYBIMAGE = 34,      /* 0x22 */
+    SYBMONEY4 = 122,    /* 0x7A */
+    SYBMONEY = 60,      /* 0x3C */
+    SYBDATETIME4 = 58,  /* 0x3A */
+    SYBREAL = 59,       /* 0x3B */
+    SYBBINARY = 45,     /* 0x2D */
+    SYBVOID = 31,       /* 0x1F */
+    SYBVARBINARY = 37,  /* 0x25 */
+    SYBNVARCHAR = 103,  /* 0x67 */
+    SYBBITN = 104,      /* 0x68 */
+    SYBNUMERIC = 108,   /* 0x6C */
+    SYBDECIMAL = 106,   /* 0x6A */
+    SYBFLTN = 109,      /* 0x6D */
+    SYBMONEYN = 110,    /* 0x6E */
+    SYBDATETIMN = 111,  /* 0x6F */
+    XSYBCHAR = 175,     /* 0xAF */
+    XSYBVARCHAR = 167,  /* 0xA7 */
+    XSYBNVARCHAR = 231, /* 0xE7 */
+    XSYBNCHAR = 239,    /* 0xEF */
+    XSYBVARBINARY = 165,    /* 0xA5 */
+    XSYBBINARY = 173,   /* 0xAD */
+    SYBLONGBINARY = 225,    /* 0xE1 */
+    SYBSINT1 = 64,      /* 0x40 */
+    SYBUINT2 = 65,      /* 0x41 */
+    SYBUINT4 = 66,      /* 0x42 */
+    SYBUINT8 = 67,      /* 0x43 */
+    SYBUNIQUE = 36,     /* 0x24 */
+    SYBVARIANT = 98     /* 0x62 */
+
+
+http://technet.microsoft.com/en-us/library/ms187752.aspx
+

@@ -5,10 +5,12 @@ import (
   "errors"
   "unsafe"
   "strings"
-//  "log"
- )
+//	"log"
+	"encoding/binary"
+	"bytes"
+)
 
- /*
+/*
  #cgo LDFLAGS: -lsybdb
  #include <stdio.h>
  #include <stdlib.h>
@@ -64,7 +66,7 @@ type Conn struct {
   Message string
   currentResult *Result
 	credentials 	
- }
+}
 
 func (conn *Conn) addMessage(msg string) {
   if len(conn.Message) > 0 {
@@ -74,7 +76,7 @@ func (conn *Conn) addMessage(msg string) {
   if conn.currentResult != nil {
     conn.currentResult.Message += msg
   }
- }
+}
 
 func (conn *Conn) addError(err string) {
   if len(conn.Error) > 0 {
@@ -105,7 +107,7 @@ func connectWithCredentials(crd *credentials) (*Conn, error) {
 }
 
 func (conn *Conn) connect() (*Conn, error){
-//   log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
+	//   log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
   conn.close()
   conn.clearMessages()
   dbproc, err := conn.getDbProc()
@@ -120,7 +122,7 @@ func (conn *Conn) connect() (*Conn, error){
     conn.close()
     return nil, err
   }
-//  log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
+	//  log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
   return conn, nil
 }
 
@@ -235,11 +237,12 @@ func (conn *Conn) exec(sql string) ([]*Result, error) {
       return nil, errors.New("dbsqlexec failed")
     }
   }
-  rst, err := conn.fetchResults()
-  if err == nil && len(conn.Error) > 0 {
-    return rst, errors.New(conn.Error)
-  }
-  return rst, err
+	return conn.fetchResults()
+  // rst, err := conn.fetchResults()
+  // if err == nil && len(conn.Error) > 0 {
+  //   return rst, errors.New(conn.Error)
+  // }
+  // return rst, err
 }
 
 func (conn *Conn) isDead() bool {
@@ -271,4 +274,75 @@ func (conn *Conn) SelectValue(sql string) (interface{}, error){
     return nil, errors.New("No rows in result.")
   }
   return results[0].Rows[0][0], nil
+}
+
+func (conn *Conn) execSp(spName string, params ...interface{}) ([]*Result, int, error) {
+	conn.clearMessages()
+	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
+		return nil, -1, errors.New("dbrpcinit failed")
+	}
+	if len(params) == 1 {
+		//conn.getSpParams(spName)
+		
+		datalen, datavalue, err := toRpcParam(C.SYBINT4, params[0])
+		if err != nil {
+			return nil, -1, err
+		}
+		if C.dbrpcparam(conn.dbproc, C.CString("@p1"), C.BYTE(0), C.SYBINT4, 0, datalen, datavalue) == C.FAIL {
+		 	return nil, -1, errors.New("dbrpcparam failed")
+		}
+	}
+	if C.dbrpcsend(conn.dbproc) == C.FAIL {
+		return nil, -1, errors.New("dbrpcsend failed")
+	}
+	results, err :=  conn.fetchResults()
+	status := -1
+	if C.dbhasretstat(conn.dbproc) == C.TRUE {
+		status = int(C.dbretstatus(conn.dbproc))
+	}
+	return results, status, err
+}
+
+
+func toRpcParam(datatype C.int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
+	buf := new(bytes.Buffer)
+	switch datatype {
+	case C.SYBINT4: {
+		var int32Value int32
+		switch value.(type) { 
+		case int: {
+			intValue, _ := value.(int)
+			int32Value = int32(intValue)
+		}
+		case int32: 
+			int32Value, _ = value.(int32)
+		case int64: 
+			intValue, _ := value.(int64)
+			int32Value = int32(intValue)
+		default: {
+			err = errors.New("failed to convert to int32")
+			return
+		}
+		}
+		err = binary.Write(buf, binary.LittleEndian, int32Value)
+	}
+	}
+	byt := buf.Bytes()
+	datavalue =  (*C.BYTE)(unsafe.Pointer(&byt[0]))
+	datalen = C.DBINT(len(byt))
+	return
+}
+
+
+func (conn *Conn) getSpParams(spName string) (*Result, error) {
+	sql := fmt.Sprintf(`select name, parameter_id, user_type_id, is_output, max_length, precision, scale
+	                    from sys.parameters
+	                    where object_id = object_id('%s')
+	                    order by parameter_id`, spName)
+	results, err := conn.exec(sql)
+	if err != nil {
+		return nil, err
+	}
+	PrintResults(results)
+	return results[0], nil
 }

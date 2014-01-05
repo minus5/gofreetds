@@ -1,12 +1,7 @@
 package freetds
 
 import (
-//  "fmt"
   "errors"
-  "strings"
-  "bytes"
-  "encoding/binary"
-  "time"
 )
 
 /*
@@ -82,6 +77,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
     results = append(results, result)
     conn.currentResult = nil
   }
+	if len(conn.Error) > 0 {
+    return results, errors.New(conn.Error)
+  }
   return results, nil
 }
 
@@ -95,112 +93,9 @@ type column struct {
 }
 
 func (col *column) Value() interface{}{
-//  fmt.Printf("%s %v\n", col.name, col.buffer)
-
   if col.status == -1 {
     return nil
   }
+	return sqlBufToType(col.typ, col.buffer)
+} 
 
-  if col.bindTyp == C.NTBSTRINGBIND {
-    len := strings.Index(string(col.buffer), "\x00")
-    return string(col.buffer[:len])
-  }
-
-  buf := bytes.NewBuffer(col.buffer)
-  switch col.typ {
-  case C.SYBINT1:
-    var value uint8
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBINT2:
-    var value int16
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBINT4:
-    var value int32
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBINT8:
-    var value int64
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBDATETIME:
-    var days int32  /* number of days since 1/1/1900 */
-    var sec  uint32 /* 300ths of a second since midnight */
-    binary.Read(buf, binary.LittleEndian, &days)
-    binary.Read(buf, binary.LittleEndian, &sec)
-    value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-    value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
-    return value
-  case C.SYBDATETIME4:
-    var days uint16  /* number of days since 1/1/1900 */
-    var mins  uint16 /* number of minutes since midnight */
-    binary.Read(buf, binary.LittleEndian, &days)
-    binary.Read(buf, binary.LittleEndian, &mins)
-    value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-    value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(mins) * time.Minute)
-    return value
-  case C.SYBMONEY:
-    var high int32
-    var low  uint32
-    binary.Read(buf, binary.LittleEndian, &high)
-    binary.Read(buf, binary.LittleEndian, &low)
-    return float64(int64(high) * 4294967296 + int64(low)) / 10000
-  case C.SYBMONEY4 :
-    var value int32
-    binary.Read(buf, binary.LittleEndian, &value)
-    return float64(value) / 10000
-  case C.SYBREAL:
-    var value float32
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBFLT8:
-    var value float64
-    binary.Read(buf, binary.LittleEndian, &value)
-    return value
-  case C.SYBBIT:
-    return col.buffer[0] == 1
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY: 
-    return append([]byte{},  col.buffer[:col.size]...) // make copy of col.buffer
-
-    //TODO - decimal & numeric datatypes
-  }
-  return nil
-}
-
-func dbbindtype(datatype C.int) C.int {
-  switch datatype {
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
-    return C.BINARYBIND;
-  case C.SYBBIT:
-    return C.BITBIND;
-  case C.SYBTEXT, C.SYBVARCHAR, C.SYBCHAR:
-    return C.NTBSTRINGBIND;
-  case C.SYBDATETIME:
-    return C.DATETIMEBIND;
-  case C.SYBDATETIME4:
-    return C.SMALLDATETIMEBIND;
-  case C.SYBDECIMAL:
-    return C.DECIMALBIND;
-  case C.SYBNUMERIC:
-    return C.NUMERICBIND;
-  case C.SYBFLT8:
-    return C.FLT8BIND;
-  case C.SYBREAL:
-    return C.REALBIND;
-  case C.SYBINT1:
-    return C.TINYBIND;
-  case C.SYBINT2:
-    return C.SMALLBIND;
-  case C.SYBINT4:
-    return C.INTBIND;
-  case C.SYBINT8:
-    return C.BIGINTBIND;
-  case C.SYBMONEY:
-    return C.MONEYBIND;
-  case C.SYBMONEY4:
-    return C.SMALLMONEYBIND;
-  }
-  //TODO - log unknown datatype
-  return C.NTBSTRINGBIND;
-}
