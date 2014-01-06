@@ -48,7 +48,7 @@ type SpOutputParam struct {
 	Value interface{}
 }
 
-func (conn *Conn) execSp(spName string, params ...interface{}) (*SpResult, error) {
+func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
 	conn.clearMessages()
 	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
 		return nil, errors.New("dbrpcinit failed")
@@ -125,6 +125,8 @@ type spParam struct {
 	Scale uint8
 }
 
+//TODO make caching of returend params
+//by connection string
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 	sql := fmt.Sprintf(`
 select name, parameter_id, user_type_id, is_output, max_length, precision, scale

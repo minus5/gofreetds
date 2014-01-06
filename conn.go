@@ -105,7 +105,7 @@ func connectWithCredentials(crd *credentials) (*Conn, error) {
 }
 
 func (conn *Conn) connect() (*Conn, error){
-	//   log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
+	//log.Printf("freetds connecting to %s@%s.%s", conn.user, conn.host, conn.database)
   conn.close()
   conn.clearMessages()
   dbproc, err := conn.getDbProc()
@@ -120,7 +120,7 @@ func (conn *Conn) connect() (*Conn, error){
     conn.close()
     return nil, err
   }
-	//  log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
+	//log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
   return conn, nil
 }
 
@@ -176,7 +176,6 @@ func (conn *Conn) clearMessages() {
 }
 
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
-  //err := conn.DbUse()
   if conn.IsMirrorMessage() {
     err := conn.reconnect()
     if err != nil {
@@ -236,11 +235,6 @@ func (conn *Conn) exec(sql string) ([]*Result, error) {
     }
   }
 	return conn.fetchResults()
-  // rst, err := conn.fetchResults()
-  // if err == nil && len(conn.Error) > 0 {
-  //   return rst, errors.New(conn.Error)
-  // }
-  // return rst, err
 }
 
 func (conn *Conn) isDead() bool {
