@@ -61,67 +61,71 @@ func (r *Result) Next() bool {
 }
 
 func (r *Result) Scan(values ...interface{}) error {
-	if len(values) > len(r.Columns) {
-		return errors.New(fmt.Sprintf("more values %d than columns %d", len(values), len(r.Columns)))
+	return assingValues(r.Rows[r.currentRow], values)
+}
+
+func assingValues(src []interface{}, dest []interface{}) error {
+	if len(dest) > len(src) {
+		return errors.New(fmt.Sprintf("More dest values %d than src values %d.", len(dest), len(src)))
 	}
-	for i, value := range(values) {
-		rValue := r.Rows[r.currentRow][i]
+	for i, value := range(dest) {
+		srcValue := src[i]
 		var ok bool
 		switch f := value.(type) {
     case *string:
-			*f, ok = rValue.(string)
+			*f, ok = srcValue.(string)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to string.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to string.", srcValue))
 			}
     case *int:
-			*f, ok = rValue.(int)
+			*f, ok = srcValue.(int)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to int.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to int.", srcValue))
 			}
     case *uint8:
-			*f, ok = rValue.(uint8)
+			*f, ok = srcValue.(uint8)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to uint8.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to uint8.", srcValue))
 			}
     case *int16:
-			*f, ok = rValue.(int16)
+			*f, ok = srcValue.(int16)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to int16.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to int16.", srcValue))
 			}
     case *int32:
-			*f, ok = rValue.(int32)
+			*f, ok = srcValue.(int32)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to int32.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to int32.", srcValue))
 			}
     case *int64:
-			*f, ok = rValue.(int64)
+			*f, ok = srcValue.(int64)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to int64.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to int64.", srcValue))
 			}
     case *float32:
-			*f, ok = rValue.(float32)
+			*f, ok = srcValue.(float32)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to float32.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to float32.", srcValue))
 			}
     case *float64:
-			*f, ok = rValue.(float64)
+			*f, ok = srcValue.(float64)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to float64.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to float64.", srcValue))
 			}
     case *bool:
-			*f, ok = rValue.(bool)
+			*f, ok = srcValue.(bool)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to bool.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to bool.", srcValue))
 			}
     case *[]byte:
-			*f, ok = rValue.([]byte)
+			*f, ok = srcValue.([]byte)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to []byte.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to []byte.", srcValue))
 			}
     case *time.Time:
-			*f, ok = rValue.(time.Time)
+			*f, ok = srcValue.(time.Time)
 			if !ok {
-				return errors.New(fmt.Sprintf("Failed to convert %T to time.Time.", rValue))
+				return errors.New(fmt.Sprintf("Failed to convert %T to time.Time.", srcValue))
 			}
 		}
 	}
