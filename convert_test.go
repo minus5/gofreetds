@@ -41,11 +41,11 @@ func TestInt64(t *testing.T) {
 	testToSqlToType(t, SYBINT8, int64(9223372036854775807))
 }
 
-func TestString(t *testing.T) {
-	testToSqlToType(t, SYBNVARCHAR, "pero")
-	testToSqlToType(t, SYBNVARCHAR, "pero ždero")
-	testToSqlToType(t, SYBNVARCHAR, "šđčćž")
-}
+// func TestString(t *testing.T) {
+// 	testToSqlToType(t, SYBNVARCHAR, "pero")
+// 	testToSqlToType(t, SYBNVARCHAR, "pero ždero")
+// 	testToSqlToType(t, SYBNVARCHAR, "šđčćž")
+// }
 
 func TestFloat(t *testing.T) {
 	testToSqlToType(t, SYBFLT8, float64(123.45))

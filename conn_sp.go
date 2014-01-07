@@ -76,13 +76,22 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	}
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
-		return nil, errors.New("dbrpcsend failed")
+		if len(conn.Error) != 0 {
+      return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+    } else {
+			return nil, errors.New("dbrpcsend failed")
+    }
 	}
 	//results
 	result := &SpResult{Status: -1}
 	result.Results, err =  conn.fetchResults()
 	if err != nil {
-		return nil, err
+		
+		if len(conn.Error) != 0 {
+      return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+    } else {
+			return nil, err
+    }
 	}
 	//return status
 	if C.dbhasretstat(conn.dbproc) == C.TRUE {
@@ -101,6 +110,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		param := &SpOutputParam{Name: name, Value: value}
 		result.OutputParams[i-1] = param
 	}
+
 	return result, nil
 }
 
@@ -111,7 +121,8 @@ func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.
 		return
 	}
 	datavalue =  (*C.BYTE)(unsafe.Pointer(&data[0]))
-	datalen = C.DBINT(len(data))
+	datalen = C.DBINT(len(data)) 
+	fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
 	return
 }
 
@@ -130,9 +141,10 @@ type spParam struct {
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 	sql := fmt.Sprintf(`
 select name, parameter_id, user_type_id, is_output, max_length, precision, scale
-	                    from sys.parameters
-	                    where object_id = object_id('%s')
-	                    order by parameter_id`, spName)
+from sys.all_parameters
+where object_id =  (select object_id from sys.all_objects where object_id = object_id('%s'))
+order by parameter_id
+`, spName)
 	results, err := conn.exec(sql)
 	if err != nil {
 		return nil, err

@@ -25,6 +25,7 @@ const (
 	SYBCHAR = 47
 	SYBVARCHAR = 39    //nvarchar      string
 	SYBNVARCHAR = 103  //nvarchar      string
+	XSYBNVARCHAR = 231
 
 	SYBREAL = 59       //real          float32
 	SYBFLT8 = 62       //float(53)     float64
@@ -99,7 +100,7 @@ func sqlBufToType(datatype int, data []byte) interface{} {
     return value
   case C.SYBBIT:
     return data[0] == 1
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY: 
+  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY, XSYBVARBINARY:
     return append([]byte{},  data[:len(data)-1]...) // make copy of data
     //TODO - decimal & numeric datatypes
 	default: //string
@@ -234,7 +235,16 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 	default: {
 		if typedValue, ok := value.(string); ok {
-			data = append([]byte(typedValue), []byte{0}[0])
+			data = []byte(typedValue)
+			if datatype == XSYBNVARCHAR {
+				//FIXME - adding len bytes to the end of the buf
+				//        realy don't understand why this is necessary
+				//        come to this solution by try and error
+				l := len(data) 
+				for i:=0; i<l; i++ {
+					data = append(data, byte(0))
+				}
+			}
 			return
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to string.", value))

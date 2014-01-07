@@ -46,6 +46,28 @@ func TestExecSpInputParams(t *testing.T) {
 	assert.Equal(t, 357, rst.Status)
 }
 
+func TestExecSpInputParams2(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255) as select @p1, @p2, @p3, len(@p1), len(@p3); return")
+	assert.Nil(t, err)
+	want := "£¢§‹›†€"
+	wantp2 := "abc"
+	wantp3 := "šđčćžabc"
+	//wantp3 := "abc"
+	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3)
+	assert.Nil(t, err)
+	assert.True(t, rst.HasResults())
+	var got, gotp2, gotp3 string 
+	result := rst.Results[0]
+	result.Next() 
+	result.Scan(&got, &gotp2, &gotp3)
+	assert.Equal(t, want, got)
+	assert.Equal(t, wantp2, gotp2)
+	assert.Equal(t, wantp3, gotp3)
+	PrintResults(rst.Results) 
+}
+
+
 func TestExecSpOutputParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_output_params", "@p1 int output as select @p1 = @p1 + 1")
