@@ -114,7 +114,6 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	return result, nil
 }
 
-
 func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
 	data, err := typeToSqlBuf(datatype, value)
 	if err != nil {

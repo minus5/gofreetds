@@ -1,6 +1,12 @@
 package freetds
 
-import ("testing"; "os";"fmt";"time";"strings")
+import (
+	"testing"
+	"os"
+	"fmt"
+	"time"
+	"strings"
+)
 
 var CREATE_DB_SCRIPTS = [...]string{`
 if exists(select * from sys.tables where name = 'freetds_types')
@@ -55,6 +61,14 @@ func ConnectToTestDb(t *testing.T) (*Conn) {
     return nil
   }
   return conn
+}
+
+func testDbConnStr() string {
+	db   := os.Getenv("GOFREETDS_DB")
+  user := os.Getenv("GOFREETDS_USER")
+  pwd  := os.Getenv("GOFREETDS_PWD")
+  host := os.Getenv("GOFREETDS_HOST")
+	return fmt.Sprintf("user=%s;password=%s;host=%s;database=%s", user, pwd, host, db)
 }
 
 func IsMirrorHostDefined() bool {
@@ -263,19 +277,19 @@ func BenchmarkConnectExecute(b *testing.B) {
 }
 
 func BenchmarkParalelConnectExecute(b *testing.B) {
-  pool := make(chan int, 100) //connection pool for 100 connections
+  pool := make(chan int, 5) //connection pool for x connections
   running := 0
-  for i := 0; i < 1000; i++ {
+  for i := 0; i < 100; i++ {
     go func(i int) {
       pool <- i
       running++
-      fmt.Printf("starting %d\n", i)
+      //fmt.Printf("starting %d\n", i)
       conn := ConnectToTestDb(nil)
       defer conn.Close()
       conn.Exec("select * from authors")
       <- pool
       running--
-      fmt.Printf("finished %d\n", i)
+      //fmt.Printf("finished %d\n", i)
     }(i)
   }
   for {

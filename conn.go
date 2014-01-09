@@ -6,6 +6,8 @@ import (
   "unsafe"
   "strings"
 //	"log"
+	"sync"
+	"time"
 )
 
 /*
@@ -63,6 +65,7 @@ type Conn struct {
   Error string
   Message string
   currentResult *Result
+	expiresFromPool time.Time
 	credentials 	
 }
 
@@ -134,7 +137,11 @@ func (conn *Conn) close() {
   }
 }
 
+var getDbProcMutex = &sync.Mutex{}
+
 func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
+	getDbProcMutex.Lock()
+	defer getDbProcMutex.Unlock()
   erc := C.dbinit()
   if erc == C.FAIL {
     return nil, errors.New("cannot allocate an array of TDS_MAX_CONN TDSSOCKET pointers")
