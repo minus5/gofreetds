@@ -23,9 +23,10 @@ const (
 	SYBINT8 = 127      //bigint        int64
 
 	SYBCHAR = 47
-	SYBVARCHAR = 39    //nvarchar      string
+	SYBVARCHAR = 39    //varchar       string
 	SYBNVARCHAR = 103  //nvarchar      string
-	XSYBNVARCHAR = 231
+	XSYBNVARCHAR = 231 //nvarchar      string
+	XSYBNCHAR = 239    //nchar         string
 
 	SYBREAL = 59       //real          float32
 	SYBFLT8 = 62       //float(53)     float64
@@ -236,7 +237,8 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	default: {
 		if typedValue, ok := value.(string); ok {
 			data = []byte(typedValue)
-			if datatype == XSYBNVARCHAR {
+			if datatype == XSYBNVARCHAR ||
+				datatype == XSYBNCHAR {
 				//FIXME - adding len bytes to the end of the buf
 				//        realy don't understand why this is necessary
 				//        come to this solution by try and error

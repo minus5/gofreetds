@@ -48,23 +48,31 @@ func TestExecSpInputParams(t *testing.T) {
 
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255) as select @p1, @p2, @p3, len(@p1), len(@p3); return")
+	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10) as select @p1, @p2, @p3, @p4, @p5;  return")
 	assert.Nil(t, err)
 	want := "£¢§‹›†€"
 	wantp2 := "abc"
 	wantp3 := "šđčćžabc"
-	//wantp3 := "abc"
-	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3)
+	wantp4 := "šđčćžabcde"
+	wantp5 := []byte{1,2,3,4,5,6,7,8,9,10}
+	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3, wantp4, wantp5)
 	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	if rst == nil {
+		return
+	}
 	assert.True(t, rst.HasResults())
-	var got, gotp2, gotp3 string 
+	var got, gotp2, gotp3, gotp4 string
+	var gotp5 []byte
 	result := rst.Results[0]
 	result.Next() 
-	result.Scan(&got, &gotp2, &gotp3)
+	result.Scan(&got, &gotp2, &gotp3, &gotp4, &gotp5)
 	assert.Equal(t, want, got)
 	assert.Equal(t, wantp2, gotp2)
 	assert.Equal(t, wantp3, gotp3)
-	PrintResults(rst.Results) 
+	assert.Equal(t, wantp4, gotp4)
+	assert.Equal(t, wantp5, gotp5) 
+	//PrintResults(rst.Results)
 }
 
 
