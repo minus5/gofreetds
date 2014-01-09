@@ -122,7 +122,7 @@ func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.
 	}
 	datavalue =  (*C.BYTE)(unsafe.Pointer(&data[0]))
 	datalen = C.DBINT(len(data)) 
-	fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
+	//fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
 	return
 }
 
