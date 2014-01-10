@@ -8,8 +8,8 @@ import ("fmt")
 */
 import "C"
 
-//export ErrHandler
-func ErrHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserrstr *C.char) C.int {
+//export errHandler
+func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserrstr *C.char) C.int {
   var err string
   if dberr != 0{
     err = fmt.Sprintf("Msg %d, Level %d", dberr, severity)
@@ -28,8 +28,8 @@ func ErrHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
   return C.INT_CANCEL
 }
 
-//export MsgHandler
-func MsgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgtext, srvname, procname *C.char, line C.int) C.int {
+//export msgHandler
+func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgtext, srvname, procname *C.char, line C.int) C.int {
   //changed_database = 5701, changed_language = 5703
   if (msgno == 5701 || msgno == 5703) {
     return 0

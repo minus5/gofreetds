@@ -25,14 +25,14 @@ import (
 
  static int err_handler(DBPROCESS * dbproc, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr)
  {
-   extern int ErrHandler(long dbprocAddr, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr);
-   return ErrHandler((long)dbproc, severity, dberr, oserr, dberrstr, oserrstr);
+   extern int errHandler(long dbprocAddr, int severity, int dberr, int oserr, char *dberrstr, char *oserrstr);
+   return errHandler((long)dbproc, severity, dberr, oserr, dberrstr, oserrstr);
  }
 
  static int msg_handler(DBPROCESS * dbproc, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line)
  {
-   extern int MsgHandler(long dbprocAddr, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line);
-   return MsgHandler((long)dbproc, msgno, msgstate, severity, msgtext, srvname, procname, line);
+   extern int msgHandler(long dbprocAddr, DBINT msgno, int msgstate, int severity, char *msgtext, char *srvname, char *procname, int line);
+   return msgHandler((long)dbproc, msgno, msgstate, severity, msgtext, srvname, procname, line);
  }
 
  static void my_dblogin(LOGINREC* login, char* username, char* password) {
@@ -194,7 +194,7 @@ func (conn *Conn) clearMessages() {
 }
 
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
-  if conn.IsMirrorMessage() {
+  if conn.isMirrorMessage() {
     err := conn.reconnect()
     if err != nil {
       return nil, err
@@ -214,7 +214,7 @@ func (conn *Conn) Exec(sql string) ([]*Result, error) {
 func (conn *Conn) reconnect() error {
   var err error
   for i:=0; i<2; i++ {
-    if conn.IsMirrorMessage() {
+    if conn.isMirrorMessage() {
       conn.switchMirror()
     }
     _, err = conn.connect()
@@ -226,7 +226,7 @@ func (conn *Conn) mirrorDefined() bool {
   return len(conn.mirrorHost) > 0
 }
 
-func (conn *Conn) IsMirrorMessage() bool {
+func (conn *Conn) isMirrorMessage() bool {
   return strings.Contains(conn.Message, "It is acting as a mirror database") ||
 		strings.Contains(conn.Message, "It is in the middle of a restore")
 }
@@ -262,7 +262,7 @@ func (conn *Conn) isDead() bool {
   return C.dbdead(conn.dbproc) == C.TRUE
 }
 
-func (conn *Conn) IsLive() bool {
+func (conn *Conn) isLive() bool {
   results, err := conn.exec("select 1")
   if err != nil {
     return false

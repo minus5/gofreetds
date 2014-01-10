@@ -79,7 +79,7 @@ func TestConnect(t *testing.T) {
   conn := ConnectToTestDb(t)
   if conn == nil { return }
   defer conn.Close()
-  if !conn.IsLive() {
+  if !conn.isLive() {
     t.Error()
   }
   if conn.isDead() {
@@ -90,7 +90,7 @@ func TestConnect(t *testing.T) {
 func TestItIsSafeToCloseFailedConnection(t *testing.T) {
   conn := new(Conn)
   if conn == nil { return }
-  if conn.IsLive() {
+  if conn.isLive() {
     t.Error()
   }
   if !conn.isDead() {
@@ -146,7 +146,7 @@ func TestRetryOnKilledConnection(t *testing.T) {
 
   pid1, _ := conn1.SelectValue("select @@spid")
   conn2.Exec(fmt.Sprintf("kill %d", pid1))
-  if conn1.IsLive() {
+  if conn1.isLive() {
     t.Error()
   }
   if !conn1.isDead() {
