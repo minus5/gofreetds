@@ -28,7 +28,7 @@ func (c *Conn) Prepare(query string) (driver.Stmt, error) {
 } 
 
 func (c *Conn) Close() error {
-	c.close()
+	c.closeOrRelease()
 	return nil
 }
 

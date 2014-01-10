@@ -66,6 +66,7 @@ type Conn struct {
   Message string
   currentResult *Result
 	expiresFromPool time.Time
+	belongsToPool *ConnPool
 	credentials 	
 }
 
@@ -125,6 +126,16 @@ func (conn *Conn) connect() (*Conn, error){
   }
 	//log.Printf("freetds connected to %s@%s.%s", conn.user, conn.host, conn.database)
   return conn, nil
+}
+
+//if conn belongs to pool release connection to the pool
+//if not close
+func (conn *Conn) closeOrRelease() {
+	if conn.belongsToPool == nil {
+		conn.close()
+	} else {
+		conn.belongsToPool.Release(conn)
+	}
 }
 
 func (conn *Conn) close() {

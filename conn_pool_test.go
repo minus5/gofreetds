@@ -27,10 +27,37 @@ func TestPool(t *testing.T) {
 	assert.Equal(t, len(p.pool), 2)
 }
 
+func TestPoolRelease(t *testing.T) {
+	p, _ := NewConnPool(testDbConnStr(), 2)
+	assert.Equal(t, p.connCount, 1)
+	c1, _ := p.Get()
+	c2, _ := p.Get()
+	assert.Equal(t, p.connCount, 2)
+	assert.Equal(t, len(p.pool), 0)
+	//conn can be released to the pool by calling Close on conn
+	c1.Close()
+	assert.Equal(t, p.connCount, 2)
+	assert.Equal(t, len(p.pool), 1)
+	//or by calling pool Release
+	p.Release(c2)
+	assert.Equal(t, p.connCount, 2)
+	assert.Equal(t, len(p.pool), 2)
+}
+
 func TestPoolBlock(t *testing.T) {
 	p, _ := NewConnPool(testDbConnStr(), 2)
 	c1, _ := p.Get()
 	c2, _ := p.Get()
+
+	//check that poolGuard channel is full 
+	full := false
+	select {
+	case p.poolGuard <- true:
+	default:
+		full = true
+	}
+	assert.True(t, full)
+	
 	go func() {
 		c3, _ := p.Get()
 		assert.Equal(t, c1, c3)
