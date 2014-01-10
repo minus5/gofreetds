@@ -10,15 +10,15 @@ var now = time.Now()
 
 func testResult() *Result {
 	r := NewResult()
-	r.AddColumn("1", 0, 0)
-	r.AddColumn("2", 0, 0)
-	r.AddColumn("3", 0, 0)
-	r.AddColumn("4", 0, 0)
+	r.addColumn("1", 0, 0)
+	r.addColumn("2", 0, 0)
+	r.addColumn("3", 0, 0)
+	r.addColumn("4", 0, 0)
 	for i:=0; i<3; i++ {
-		r.AddValue(i, 0, 1)
-		r.AddValue(i, 1, "two")
-		r.AddValue(i, 2, now) 
-		r.AddValue(i, 3, float64(123.45)) 
+		r.addValue(i, 0, 1)
+		r.addValue(i, 1, "two")
+		r.addValue(i, 2, now) 
+		r.addValue(i, 3, float64(123.45)) 
 	}
 	return r
 }

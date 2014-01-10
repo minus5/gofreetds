@@ -35,7 +35,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
       size := C.dbcollen(conn.dbproc, no)
       typ := C.dbcoltype(conn.dbproc, no)
       bindTyp := dbbindtype(typ)
-      result.AddColumn(name, int(size), int(typ))
+      result.addColumn(name, int(size), int(typ))
       if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ {
         size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
       }
@@ -63,7 +63,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
       if rowCode == C.REG_ROW {
         for j:=0; j<cols; j++ {
           col := columns[j]
-          result.AddValue(i, j, col.Value())
+          result.addValue(i, j, col.Value())
         }
       }
     }

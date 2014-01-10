@@ -23,7 +23,7 @@ func NewResult() *Result {
 	}
 }
 
-func (r *Result) AddColumn(name string, dbSize, dbType int) {
+func (r *Result) addColumn(name string, dbSize, dbType int) {
   c := new(ResultColumn)
   c.Name = name
   c.DbSize = dbSize
@@ -31,7 +31,7 @@ func (r *Result) AddColumn(name string, dbSize, dbType int) {
   r.Columns = append(r.Columns, c)
 }
 
-func (r *Result) AddValue(row, col int, value interface{}) {
+func (r *Result) addValue(row, col int, value interface{}) {
   if r.Rows == nil {
     r.Rows = make([][] interface{}, 1)
     r.Rows[0] = make([]interface{}, len(r.Columns))
@@ -64,6 +64,13 @@ func (r *Result) Scan(values ...interface{}) error {
 	return assingValues(r.Rows[r.currentRow], values)
 }
 
+//assignValues copies to dest values in src
+//dest should be a pointer type
+//error is returned if types don't match
+//TODO conversion can be performend for some types
+//     for example if dest if int64 and src int32
+//     this version requires exact type match
+//     reference: http://golang.org/src/pkg/database/sql/convert.go
 func assingValues(src []interface{}, dest []interface{}) error {
 	if len(dest) > len(src) {
 		return errors.New(fmt.Sprintf("More dest values %d than src values %d.", len(dest), len(src)))
