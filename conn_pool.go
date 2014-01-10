@@ -8,13 +8,25 @@ import (
 var poolExpiresInterval = 5 * time.Minute
 var poolCleanupInterval = time.Minute
 
-//ConnPool - connection pool for the maxCount connections
-//create pool by calling NewConnPool
-//conn can be acquired from the pool by pool.Get()
-//release conn to the pool by caling conn.Close() or pool.Release(conn)
-//destroy pool and all connections by calling pool.Close()
-//connections will be removed from the pool if not active for poolExpiresInterval
-//but there is always one connection in the pool 
+//ConnPool - connection pool for the maxCount connections.
+//
+//Connection can be acquired from the pool by pool.Get().
+//
+//Release conn to the pool by caling conn.Close() or pool.Release(conn).
+//
+//Destroy pool and all connections by calling pool.Close().
+//
+//Connections will be removed from the pool if not active for poolExpiresInterval.
+//But there is always one connection in the pool.
+//
+//Example:
+//  pool, err := NewConnPool("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword", 100)
+//  ...
+//  conn, err := pool.Get()
+//  //use conn
+//  conn.Close()
+//  ...
+//  pool.Close()
 type ConnPool struct {
 	connStr string
 	maxConn int
@@ -25,12 +37,14 @@ type ConnPool struct {
 	connCount int
 }
 
-//NewCoonPool creates new connection pool
-//connection will be created using provided connection string 
-//maxConn is max number of connections in the pool
-//new connections will be created when needed
-//there is always one connection in the pool
-//returns err if fails to create initial connection
+//NewCoonPool creates new connection pool.
+//Connection will be created using provided connection string.
+//MaxConn is max number of connections in the pool.
+//
+//New connections will be created when needed.
+//There is always one connection in the pool.
+//
+//Returns err if fails to create initial connection.
 func NewConnPool(connStr string, maxConn int) (*ConnPool, error) {
 	p := &ConnPool{
 		connStr: connStr, 
@@ -62,8 +76,8 @@ func (p *ConnPool) newConn() (*Conn, error) {
 	return conn, err
 }
 
-//Get returns connection from the pool
-//blocks if there are no free connections
+//Get returns connection from the pool.
+//Blocks if there are no free connections, and maxConn is reached.
 func (p *ConnPool) Get() (*Conn, error) {
 	p.poolGuard <- true //make reservation, blocks if poolGuard is full
 	conn := p.getPooled()
@@ -97,7 +111,7 @@ func (p *ConnPool) addToPool(conn *Conn) {
 	}
 }
 
-//Release connection to the pool
+//Release connection to the pool.
 func (p *ConnPool) Release(conn *Conn) {
 	if conn.belongsToPool != p {
 		return
@@ -106,8 +120,8 @@ func (p *ConnPool) Release(conn *Conn) {
 	<- p.poolGuard  //remove reservation
 }
 
-//Close connection pool 
-//closes all existing connections
+//Close connection pool. 
+//Closes all existing connections in the pool.
 func (p *ConnPool) Close() {
 	p.poolMutex.Lock()
 	defer p.poolMutex.Unlock()

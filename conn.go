@@ -1,3 +1,4 @@
+//Package freetds provides interface to Microsoft Sql Server database by using freetds C lib: http://www.freetds.org.
 package freetds
 
 import (
@@ -59,6 +60,7 @@ type credentials struct{
 	user, pwd, host, database, mirrorHost string
 }
 
+//Connection to the database
 type Conn struct {
   dbproc *C.DBPROCESS
   addr int64
@@ -87,14 +89,21 @@ func (conn *Conn) addError(err string) {
   conn.Error += err
 }
 
+//Connect to the database, returns new connection or error.
 func Connect(user, pwd, host, database string) (*Conn, error) {
 	return connectWithCredentials(&credentials{user: user, pwd:pwd, host:host, database: database}) 
 }
 
+//Connect to the database with mirroring support, returns new connection or error.
 func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
 	return connectWithCredentials(&credentials{user: user, pwd:pwd, host:host, database: database, mirrorHost: mirrorHost})
 }
 
+//Connect to the database with connection string, returns new connection or error.
+//Example: 
+//  conn, err := ConnectWithConnectionString("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror")
+//
+//Mirror is optional, other params are mandatory.
 func ConnectWithConnectionString(connStr string) (*Conn, error) {
 	return connectWithCredentials(parseConnectionString(connStr))
 }
