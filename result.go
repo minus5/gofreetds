@@ -60,8 +60,9 @@ func (r *Result) Next() bool {
 	return true
 }
 
-func (r *Result) Scan(values ...interface{}) error {
-	return assingValues(r.Rows[r.currentRow], values)
+//Scan copies the columns in the current row into the values pointed at by dest.
+func (r *Result) Scan(dest ...interface{}) error {
+	return assingValues(r.Rows[r.currentRow], dest)
 }
 
 //assignValues copies to dest values in src

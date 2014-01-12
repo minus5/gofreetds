@@ -31,7 +31,7 @@ func parseConnectionString(connStr string) *credentials {
 }
 
 //usefull for testing n
-func PrintResults(results []*Result) {
+func printResults(results []*Result) {
   fmt.Printf("results %v", results)
   for _, r := range results {
 		if r.Rows != nil {

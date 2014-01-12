@@ -7,49 +7,49 @@ import (
 )
 
 //implements Stmt interface from http://golang.org/src/pkg/database/sql/driver/driver.go
-type Stmt struct {
+type MssqlStmt struct {
 	query string
 	numInput int
 	conn *Conn
 }
 
-func (s *Stmt) Close() error {
+func (s *MssqlStmt) Close() error {
 	return nil
 }
 
-func (s *Stmt) NumInput() int {
+func (s *MssqlStmt) NumInput() int {
 	return s.numInput
 }
 
-func (s *Stmt) Exec(args []driver.Value) (driver.Result, error) {
+func (s *MssqlStmt) Exec(args []driver.Value) (driver.Result, error) {
 	results, err := s.conn.ExecuteSql(s.query, args...)
 	if err != nil {
 		return nil, err
 	}
-	return &ExecResult{results: results}, nil
+	return &MssqlResult{results: results}, nil
 }
 
-func (s *Stmt) Query(args []driver.Value) (driver.Rows, error) {
+func (s *MssqlStmt) Query(args []driver.Value) (driver.Rows, error) {
 	results, err := s.conn.ExecuteSql(s.query, args...)
 	if err != nil {
 		return nil, err
 	}
-	return &QueryRows{results: results}, nil
+	return &MssqlRows{results: results}, nil
 }
 
 
 //implements Rows interface from http://golang.org/src/pkg/database/sql/driver/driver.go
-type QueryRows struct {
+type MssqlRows struct {
 	results []*Result 
 	currentRow int
 	currentResult int
 }
 
-func (r QueryRows) result() *Result{
+func (r MssqlRows) result() *Result{
 	return r.results[r.currentResult]
 }
 
-func (r *QueryRows) Columns() []string {
+func (r *MssqlRows) Columns() []string {
 	cols := make([]string, len(r.result().Columns))
 	for i, c := range r.result().Columns {
 		cols[i] = c.Name
@@ -57,11 +57,11 @@ func (r *QueryRows) Columns() []string {
 	return cols
 } 
 
-func (r *QueryRows) Close() error {
+func (r *MssqlRows) Close() error {
 	return nil
 }
 
-func (r *QueryRows) Next(dest []driver.Value) error {
+func (r *MssqlRows) Next(dest []driver.Value) error {
 	if len(r.results) == 0 {
 		return io.EOF
 	}
@@ -75,37 +75,36 @@ func (r *QueryRows) Next(dest []driver.Value) error {
 	return nil
 }
 
-//true and move to next result if exists
-func (r *QueryRows) MoreResults() bool {
-	//last result is statusRow, because of that -2
-	if r.currentResult >= len(r.results) - 2 {
-		r.currentResult++
-		return true
-	}
-	return false
-}
-
+// //true and move to next result if exists
+// func (r *MssqlRows) MoreResults() bool {
+// 	//last result is statusRow, because of that -2
+// 	if r.currentResult >= len(r.results) - 2 {
+// 		r.currentResult++
+// 		return true
+// 	}
+// 	return false
+// }
 
 //implements Result interface from http://golang.org/src/pkg/database/sql/driver/driver.go
-type ExecResult struct {
+type MssqlResult struct {
 	results []*Result 
 }
 
-func (r *ExecResult) RowsAffected() (int64, error){
+func (r *MssqlResult) RowsAffected() (int64, error){
 	if val := r.statusRowValue("rows_affected"); val != -1 {
 		return val, nil
 	} 
 	return 0, errors.New("no RowsAffected available")
 }
 
-func (r *ExecResult) LastInsertId() (int64, error){
+func (r *MssqlResult) LastInsertId() (int64, error){
 	if val := r.statusRowValue("last_insert_id"); val != -1 {
 		return val, nil
 	} 
 	return 0, errors.New("no LastInsertId available")
 }
 
-func (r *ExecResult) statusRowValue(columnName string) int64 {
+func (r *MssqlResult) statusRowValue(columnName string) int64 {
 	lastResult := r.results[len(r.results) -1]
 	idx := -1
 	for i, col := range lastResult.Columns {

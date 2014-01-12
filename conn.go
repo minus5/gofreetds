@@ -60,7 +60,7 @@ type credentials struct{
 	user, pwd, host, database, mirrorHost string
 }
 
-//Connection to the database
+//Connection to the database.
 type Conn struct {
   dbproc *C.DBPROCESS
   addr int64
@@ -137,9 +137,9 @@ func (conn *Conn) connect() (*Conn, error){
   return conn, nil
 }
 
-//if conn belongs to pool release connection to the pool
-//if not close
-func (conn *Conn) closeOrRelease() {
+//If conn belongs to pool release connection to the pool.
+//If not close connection.
+func (conn *Conn) Close() {
 	if conn.belongsToPool == nil {
 		conn.close()
 	} else {
@@ -157,6 +157,7 @@ func (conn *Conn) close() {
   }
 }
 
+//ensure only one getDbProc at a time
 var getDbProcMutex = &sync.Mutex{}
 
 func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
@@ -185,13 +186,14 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
   return dbproc, nil
 }
 
+//Change database.
 func (conn *Conn) DbUse() error {
   if len(conn.database) > 0 {
     cdatabase := C.CString(conn.database)
     defer C.free(unsafe.Pointer(cdatabase))
     erc := C.dbuse(conn.dbproc, cdatabase)
     if erc == C.FAIL {
-      return errors.New(fmt.Sprintf("unable to use to database %s", conn.database))
+      return errors.New(fmt.Sprintf("unable to use database %s", conn.database))
     }
   }
   return nil
@@ -202,6 +204,7 @@ func (conn *Conn) clearMessages() {
   conn.Message = ""
 }
 
+//Execute sql query.
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
   if conn.isMirrorMessage() {
     err := conn.reconnect()
@@ -284,6 +287,7 @@ func (conn *Conn) isLive() bool {
   return false
 }
 
+//Query database and return first column in the first row as result.
 func (conn *Conn) SelectValue(sql string) (interface{}, error){
   results, err := conn.Exec(sql)
   if err != nil || results == nil {

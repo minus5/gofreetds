@@ -21,16 +21,19 @@ import (
  */
 import "C"
 
+//Stored procedure execution result.
 type SpResult struct {
 	Results []*Result
 	Status int
 	OutputParams []*SpOutputParam
 }
 
+//Does the stored procedure returned any resultsets.
 func (r *SpResult) HasResults() bool {
 	return len(r.Results) > 0
 }
 
+//Does the stored procedure has any output params.
 func (r *SpResult) HasOutputParams() bool {
 	return len(r.OutputParams) > 0
 }
@@ -43,11 +46,16 @@ func (r *SpResult) Scan(values ...interface{}) error {
 	return assingValues(outputValues, values)
 }
 
+//Stored procedure output param name and value.
 type SpOutputParam struct {
 	Name string
 	Value interface{}
 }
 
+//Execute stored procedure by name and list of params.
+//
+//Example:
+//  conn.ExecSp("sp_help", "authors")
 func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
 	conn.clearMessages()
 	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {

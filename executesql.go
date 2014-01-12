@@ -15,10 +15,10 @@ const statusRow string =
           cast(@@rowcount as bigint) rows_affected
 `
 
-//execute sql query with arguments
-//? in query are arguments placeholders
-//ExecuteSql("select * from authors where au_fname = ?", "John")
-func (c *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
+//Execute sql query with arguments.
+//? in query are arguments placeholders.
+//  ExecuteSql("select * from authors where au_fname = ?", "John")
+func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
 		return nil, errors.New(fmt.Sprintf("Incorect number of params, expecting %d got %d", numParams, len(params)))
@@ -29,7 +29,7 @@ func (c *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, erro
 	if numParams == 0 {
 		sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
 	}	
-	return c.Exec(sql)
+	return conn.Exec(sql)
 }
 
 //converts query to SqlServer statement for sp_executesql
@@ -100,4 +100,3 @@ func go2SqlDataType(value interface{}) (string, string) {
 	fmt.Sprintf("'%s'", quote(strValue))
 
 }
-
