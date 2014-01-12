@@ -50,12 +50,7 @@ create procedure freetds_return_value as
   return -5`}
 
 func ConnectToTestDb(t *testing.T) (*Conn) {
-  db   := os.Getenv("GOFREETDS_DB")
-  user := os.Getenv("GOFREETDS_USER")
-  pwd  := os.Getenv("GOFREETDS_PWD")
-  host := os.Getenv("GOFREETDS_HOST")
-  mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
-  conn, err := Connect2(user, pwd, host, mirror, db)
+  conn, err := ConnectWithConnectionString(testDbConnStr())
   if err != nil {
     t.Errorf("can't connect to the test database")
     return nil
@@ -64,11 +59,12 @@ func ConnectToTestDb(t *testing.T) (*Conn) {
 }
 
 func testDbConnStr() string {
-	db   := os.Getenv("GOFREETDS_DB")
-  user := os.Getenv("GOFREETDS_USER")
-  pwd  := os.Getenv("GOFREETDS_PWD")
-  host := os.Getenv("GOFREETDS_HOST")
-	return fmt.Sprintf("user=%s;password=%s;host=%s;database=%s", user, pwd, host, db)
+	connStr := os.Getenv("GOFREETDS_CONN_STR")
+	mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
+	if mirror != "" {
+		connStr = fmt.Sprintf("%s;mirror=%s", connStr, mirror)
+	}
+	return connStr
 }
 
 func IsMirrorHostDefined() bool {
