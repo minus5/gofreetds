@@ -69,7 +69,8 @@ type Conn struct {
   currentResult *Result
 	expiresFromPool time.Time
 	belongsToPool *ConnPool
-	credentials 	
+	spParamsCache map[string][]*spParam
+	credentials	
 }
 
 func (conn *Conn) addMessage(msg string) {
@@ -109,7 +110,10 @@ func ConnectWithConnectionString(connStr string) (*Conn, error) {
 }
 
 func connectWithCredentials(crd *credentials) (*Conn, error) {
-	conn := &Conn{credentials: *crd}
+	conn := &Conn{
+		spParamsCache: make(map[string][]*spParam),
+		credentials: *crd,		
+	}
   err := conn.reconnect()
   if err != nil {
     return nil, err

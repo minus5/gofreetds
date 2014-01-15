@@ -35,6 +35,7 @@ type ConnPool struct {
 	poolMutex sync.Mutex
 	cleanupTicker *time.Ticker
 	connCount int
+	spParamsCache map[string][]*spParam
 }
 
 //NewCoonPool creates new connection pool.
@@ -53,6 +54,7 @@ func NewConnPool(connStr string, maxConn int) (*ConnPool, error) {
 		poolGuard: make(chan bool, maxConn),
 		cleanupTicker: time.NewTicker(poolCleanupInterval),
 		connCount: 0,
+		spParamsCache: make(map[string][]*spParam),
 	}
 	conn, err := p.newConn()
 	if err != nil {
@@ -71,6 +73,8 @@ func (p *ConnPool) newConn() (*Conn, error) {
 	conn, err := ConnectWithConnectionString(p.connStr)
 	if err == nil {
 		conn.belongsToPool = p
+		//share stored procedure params cache between connections in the pool
+		conn.spParamsCache = p.spParamsCache
 		p.connCount++		
 	}
 	return conn, err

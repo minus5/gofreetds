@@ -66,29 +66,38 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	if err != nil {
 		return nil, err
 	}
-	for i, param := range params {
-		spParam := spParams[i]
-		datalen, datavalue, err := toRpcParam(int(spParam.UserTypeId), param)
-		if err != nil {
-			return nil, err
-		}
+	for i, spParam := range spParams {
+		datalen := C.DBINT(0) 
+		datavalue :=  (*C.BYTE)(unsafe.Pointer(&([]byte{0})[0]))
 		maxOutputSize := C.DBINT(0)
 		status := C.BYTE(0)
 		if spParam.IsOutput {
 			status = C.DBRPCRETURN
 			maxOutputSize = C.DBINT(spParam.MaxLength)
 		}
-		if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), status, C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
-		 	return nil,  errors.New("dbrpcparam failed")
+		if i < len(params) {
+			param := params[i]
+			if param != nil {
+				datalen, datavalue, err = toRpcParam(int(spParam.UserTypeId), param)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+		if i < len(params) || spParam.IsOutput {
+			if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), status, 
+				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
+				return nil, errors.New("dbrpcparam failed")
+			}
 		}
 	}
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
 		if len(conn.Error) != 0 {
-      return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
-    } else {
+			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+		} else {
 			return nil, errors.New("dbrpcsend failed")
-    }
+		}
 	}
 	//results
 	result := &SpResult{Status: -1}
@@ -96,10 +105,10 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	if err != nil {
 		
 		if len(conn.Error) != 0 {
-      return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
-    } else {
+			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+		} else {
 			return nil, err
-    }
+		}
 	}
 	//return status
 	if C.dbhasretstat(conn.dbproc) == C.TRUE {
@@ -114,6 +123,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		name := C.GoString(C.dbretname(conn.dbproc, j))
 		typ := int(C.dbrettype(conn.dbproc, j))
 		data := C.GoBytes(unsafe.Pointer(C.dbretdata(conn.dbproc, j)), len)
+		//fmt.Printf("before sqlBufToType %v\n", data)
 		value := sqlBufToType(typ, data)
 		param := &SpOutputParam{Name: name, Value: value}
 		result.OutputParams[i-1] = param
@@ -146,6 +156,10 @@ type spParam struct {
 //TODO make caching of returend params
 //by connection string
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
+	if spParams, ok := conn.spParamsCache[spName]; ok {
+		return spParams, nil
+	}
+
 	sql := fmt.Sprintf(`
 select name, parameter_id, user_type_id, is_output, max_length, precision, scale
 from sys.all_parameters
@@ -166,5 +180,7 @@ order by parameter_id
 		}
 		spParams[i] = p
 	}
+
+	conn.spParamsCache[spName] = spParams
 	return spParams, nil
 }
