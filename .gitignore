@@ -24,3 +24,5 @@ _testmain.go
 /gofreetds.test
 /example/sqlx
 todo
+
+/example/listic
