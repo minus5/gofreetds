@@ -99,13 +99,16 @@ func sqlBufToType(datatype int, data []byte) interface{} {
     var value float64
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBBIT:
+  case C.SYBBIT, C.SYBBITN:
     return data[0] == 1
   case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY, XSYBVARBINARY:
     return append([]byte{},  data[:len(data)-1]...) // make copy of data
     //TODO - decimal & numeric datatypes
 	default: //string
 		len := strings.Index(string(data), "\x00")
+		if len == -1 {
+			return string(data)
+		}
     return string(data[:len])
   }
 }
@@ -167,7 +170,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
 		}
 	}
-	case C.SYBBIT:
+	case C.SYBBIT, C.SYBBITN:
 		if typedValue, ok := value.(bool); ok {
 			if typedValue {
 				data = []byte{1}
