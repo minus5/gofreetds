@@ -263,7 +263,7 @@ func (conn *Conn) exec(sql string) ([]*Result, error) {
 	}
 	if C.dbsqlexec(conn.dbproc) == C.FAIL {
 		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+			return nil, errors.New(fmt.Sprintf("%s%s", conn.Error, conn.Message))
 		} else {
 			return nil, errors.New("dbsqlexec failed")
 		}

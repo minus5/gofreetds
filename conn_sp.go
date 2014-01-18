@@ -94,7 +94,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
 		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+			return nil, errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
 		} else {
 			return nil, errors.New("dbrpcsend failed")
 		}
@@ -105,7 +105,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	if err != nil {
 
 		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
+			return nil, errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
 		} else {
 			return nil, err
 		}
