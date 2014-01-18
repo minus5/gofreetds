@@ -18,7 +18,7 @@ import (
 
  #include <sybfront.h>
  #include <sybdb.h>
- */
+*/
 import "C"
 
 //Stored procedure execution result.
@@ -46,7 +46,7 @@ func (r *SpResult) Scan(values ...interface{}) error {
 	return assingValues(outputValues, values)
 }
 
-//Stored procedure output param name and value.
+//Stored procedure output parameter name and value.
 type SpOutputParam struct {
 	Name string
 	Value interface{}
@@ -123,7 +123,6 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		name := C.GoString(C.dbretname(conn.dbproc, j))
 		typ := int(C.dbrettype(conn.dbproc, j))
 		data := C.GoBytes(unsafe.Pointer(C.dbretdata(conn.dbproc, j)), len)
-		//fmt.Printf("before sqlBufToType %v\n", data)
 		value := sqlBufToType(typ, data)
 		param := &SpOutputParam{Name: name, Value: value}
 		result.OutputParams[i-1] = param
@@ -143,6 +142,7 @@ func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.
 	return
 }
 
+//Stored procedure parameter definition
 type spParam struct {
 	Name string
 	ParameterId int32
@@ -153,8 +153,8 @@ type spParam struct {
 	Scale uint8
 }
 
-//TODO make caching of returend params
-//by connection string
+//Read stored procedure parameters.
+//Will cache params in connection or pool and reuse it.
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 	if spParams, ok := conn.spParamsCache[spName]; ok {
 		return spParams, nil

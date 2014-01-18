@@ -9,12 +9,6 @@ import (
 	"fmt"
 )
 
-/*
-#include <sybfront.h>
-#include <sybdb.h>
-*/
-import "C"
-
 const (
 	//name               database type   go type
 	SYBINT1 = 48       //tinyint       uint8
@@ -30,7 +24,9 @@ const (
 
 	SYBREAL = 59       //real          float32
 	SYBFLT8 = 62       //float(53)     float64
+
 	SYBBIT = 50        //bit           bool
+	SYBBITN = 104      //bit           bool
 
 	SYBMONEY4 = 122    //smallmoney    float64
 	SYBMONEY = 60      //money         float64
@@ -49,23 +45,23 @@ var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 func sqlBufToType(datatype int, data []byte) interface{} {
 	buf := bytes.NewBuffer(data)
   switch datatype {
-  case C.SYBINT1:
+  case SYBINT1:
     var value uint8
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBINT2:
+  case SYBINT2:
     var value int16
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBINT4:
+  case SYBINT4:
     var value int32
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBINT8:
+  case SYBINT8:
     var value int64
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBDATETIME:
+  case SYBDATETIME:
     var days int32  /* number of days since 1/1/1900 */
     var sec  uint32 /* 300ths of a second since midnight */
     binary.Read(buf, binary.LittleEndian, &days)
@@ -73,7 +69,7 @@ func sqlBufToType(datatype int, data []byte) interface{} {
     value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
     value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
     return value
-  case C.SYBDATETIME4:
+  case SYBDATETIME4:
     var days uint16  /* number of days since 1/1/1900 */
     var mins  uint16 /* number of minutes since midnight */
     binary.Read(buf, binary.LittleEndian, &days)
@@ -81,27 +77,27 @@ func sqlBufToType(datatype int, data []byte) interface{} {
     value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
     value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(mins) * time.Minute)
     return value
-  case C.SYBMONEY:
+  case SYBMONEY:
     var high int32
     var low  uint32
     binary.Read(buf, binary.LittleEndian, &high)
     binary.Read(buf, binary.LittleEndian, &low)
     return float64(int64(high) * 4294967296 + int64(low)) / 10000
-  case C.SYBMONEY4 :
+  case SYBMONEY4 :
     var value int32
     binary.Read(buf, binary.LittleEndian, &value)
     return float64(value) / 10000
-  case C.SYBREAL:
+  case SYBREAL:
     var value float32
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBFLT8:
+  case SYBFLT8:
     var value float64
     binary.Read(buf, binary.LittleEndian, &value)
     return value
-  case C.SYBBIT, C.SYBBITN:
+  case SYBBIT, SYBBITN:
     return data[0] == 1
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY, XSYBVARBINARY:
+  case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
     return append([]byte{},  data[:len(data)-1]...) // make copy of data
     //TODO - decimal & numeric datatypes
 	default: //string
@@ -116,21 +112,21 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	buf := new(bytes.Buffer)
 	switch datatype {
-	case C.SYBINT1: { 
+	case SYBINT1: { 
 		if typedValue, ok := value.(uint8); ok {
 			err = binary.Write(buf, binary.LittleEndian, typedValue)
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to uint8.", value))
 		}
 	}
-	case C.SYBINT2: { 
+	case SYBINT2: { 
 		if typedValue, ok := value.(int16); ok {
 			err = binary.Write(buf, binary.LittleEndian, typedValue)
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to int16.", value))
 		}
 	}
-	case C.SYBINT4: {
+	case SYBINT4: {
 		var int32Value int32
 		switch value.(type) { 
 		case int: {
@@ -149,28 +145,28 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 		err = binary.Write(buf, binary.LittleEndian, int32Value)
 	}
-	case C.SYBINT8: { 
+	case SYBINT8: { 
 		if typedValue, ok := value.(int64); ok {
 			err = binary.Write(buf, binary.LittleEndian, typedValue)
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to int64.", value))
 		}
 	}
-	case C.SYBREAL: { 
+	case SYBREAL: { 
 		if typedValue, ok := value.(float32); ok {
 			err = binary.Write(buf, binary.LittleEndian, typedValue)
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to float32.", value))
 		}
 	}
-	case C.SYBFLT8: { 
+	case SYBFLT8: { 
 		if typedValue, ok := value.(float64); ok {
 			err = binary.Write(buf, binary.LittleEndian, typedValue)
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
 		}
 	}
-	case C.SYBBIT, C.SYBBITN:
+	case SYBBIT, SYBBITN:
 		if typedValue, ok := value.(bool); ok {
 			if typedValue {
 				data = []byte{1}
@@ -181,7 +177,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to bool.", value))
 		}
-	case C.SYBMONEY4:{
+	case SYBMONEY4:{
 		if typedValue, ok := value.(float64); ok {
 			intValue := int32(typedValue * 10000)
 			err = binary.Write(buf, binary.LittleEndian, intValue)
@@ -189,7 +185,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
 		}
 	}
-	case C.SYBMONEY: {
+	case SYBMONEY: {
 		if typedValue, ok := value.(float64); ok {
 			intValue := int64(typedValue * 10000)
 			high := int32(intValue >> 32)
@@ -202,7 +198,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
 		}
 	}
-	case C.SYBDATETIME: {
+	case SYBDATETIME: {
 		if typedValue, ok := value.(time.Time); ok {
 			typedValue = typedValue.UTC()
 			days := int32(typedValue.Sub(sqlStartTime).Hours() / 24)
@@ -217,7 +213,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
 		}
 	}
-	case C.SYBDATETIME4: {
+	case SYBDATETIME4: {
 		if typedValue, ok := value.(time.Time); ok {
 			typedValue = typedValue.UTC()
 			days := uint16(typedValue.Sub(sqlStartTime).Hours() / 24)
@@ -230,7 +226,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
 		}
 	}
-	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY, XSYBVARBINARY:
+	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
 		if typedValue, ok := value.([]byte); ok {
 			data = append(typedValue, []byte{0}[0])
 			return
@@ -258,41 +254,4 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	}
 	data = buf.Bytes()
 	return
-}
-
-func dbbindtype(datatype C.int) C.int {
-  switch datatype {
-  case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
-    return C.BINARYBIND;
-  case C.SYBBIT:
-    return C.BITBIND;
-  case C.SYBTEXT, C.SYBVARCHAR, C.SYBCHAR:
-    return C.NTBSTRINGBIND;
-  case C.SYBDATETIME:
-    return C.DATETIMEBIND;
-  case C.SYBDATETIME4:
-    return C.SMALLDATETIMEBIND;
-  case C.SYBDECIMAL:
-    return C.DECIMALBIND;
-  case C.SYBNUMERIC:
-    return C.NUMERICBIND;
-  case C.SYBFLT8:
-    return C.FLT8BIND;
-  case C.SYBREAL:
-    return C.REALBIND;
-  case C.SYBINT1:
-    return C.TINYBIND;
-  case C.SYBINT2:
-    return C.SMALLBIND;
-  case C.SYBINT4:
-    return C.INTBIND;
-  case C.SYBINT8:
-    return C.BIGINTBIND;
-  case C.SYBMONEY:
-    return C.MONEYBIND;
-  case C.SYBMONEY4:
-    return C.SMALLMONEYBIND;
-  }
-  //TODO - log unknown datatype
-  return C.NTBSTRINGBIND;
 }

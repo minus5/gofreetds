@@ -99,3 +99,39 @@ func (col *column) Value() interface{}{
 	return sqlBufToType(col.typ, col.buffer)
 } 
 
+func dbbindtype(datatype C.int) C.int {
+	switch datatype {
+	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
+		return C.BINARYBIND;
+	case C.SYBBIT:
+		return C.BITBIND;
+	case C.SYBTEXT, C.SYBVARCHAR, C.SYBCHAR:
+		return C.NTBSTRINGBIND;
+	case C.SYBDATETIME:
+		return C.DATETIMEBIND;
+	case C.SYBDATETIME4:
+		return C.SMALLDATETIMEBIND;
+	case C.SYBDECIMAL:
+		return C.DECIMALBIND;
+	case C.SYBNUMERIC:
+		return C.NUMERICBIND;
+	case C.SYBFLT8:
+		return C.FLT8BIND;
+	case C.SYBREAL:
+		return C.REALBIND;
+	case C.SYBINT1:
+		return C.TINYBIND;
+	case C.SYBINT2:
+		return C.SMALLBIND;
+	case C.SYBINT4:
+		return C.INTBIND;
+	case C.SYBINT8:
+		return C.BIGINTBIND;
+	case C.SYBMONEY:
+		return C.MONEYBIND;
+	case C.SYBMONEY4:
+		return C.SMALLMONEYBIND;
+  }
+  //TODO - log unknown datatype
+  return C.NTBSTRINGBIND;
+}
