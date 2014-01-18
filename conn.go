@@ -291,6 +291,24 @@ func (conn *Conn) isLive() bool {
 	return false
 }
 
+//Begin database transaction.
+func (conn *Conn) Begin() error {
+	_, err := conn.Exec("begin transaction")
+	return err
+}
+
+//Commit database transaction.
+func (conn *Conn) Commit() error {
+	_, err := conn.Exec("commit transaction")
+	return err
+}
+
+//Rollback database transaction.
+func (conn *Conn) Rollback() error {
+	_, err := conn.Exec("if @@trancount > 0 rollback transaction")
+	return err
+}
+
 //Query database and return first column in the first row as result.
 func (conn *Conn) SelectValue(sql string) (interface{}, error) {
 	results, err := conn.Exec(sql)

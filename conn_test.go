@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"github.com/stretchrcom/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`
@@ -315,4 +316,45 @@ func BenchmarkParalelConnectExecute(b *testing.B) {
 			break
 		}
 	}
+}
+
+func TestTransactionCommitRollback(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	createTestTable2(t, conn, "test_transaction", "")
+	err := conn.Begin()
+	assert.Nil(t, err)
+	conn.Exec("insert into test_transaction values('1')")
+	conn.Exec("insert into test_transaction values('2')")
+	err = conn.Commit()
+	assert.Nil(t, err)
+	rows, err := conn.SelectValue("select count(*)  from test_transaction")
+	assert.Nil(t, err)
+	assert.Equal(t, rows, 2)
+
+	//roollback
+	err = conn.Begin()
+	assert.Nil(t, err)
+	conn.Exec("insert into test_transaction values('3')")
+	err = conn.Rollback()
+	assert.Nil(t, err)
+	rows, err = conn.SelectValue("select count(*)  from test_transaction")
+	assert.Nil(t, err)
+	assert.Equal(t, rows, 2)
+}
+
+func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
+	if columDef == "" {
+		columDef = "id int not null identity,  name varchar(255)"
+	}
+	sql := fmt.Sprintf(`
+	if exists(select * from sys.tables where name = 'table_name')
+	  drop table table_name
+	;
+  create table table_name (
+    %s
+  ) 
+  `, columDef)
+	sql = strings.Replace(sql, "table_name", name, 3)
+	_, err := conn.Exec(sql)
+	assert.Nil(t, err)
 }
