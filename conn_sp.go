@@ -1,9 +1,9 @@
 package freetds
 
 import (
-  "fmt"
-  "errors"
-  "unsafe"
+	"errors"
+	"fmt"
+	"unsafe"
 )
 
 /*
@@ -23,8 +23,8 @@ import "C"
 
 //Stored procedure execution result.
 type SpResult struct {
-	Results []*Result
-	Status int
+	Results      []*Result
+	Status       int
 	OutputParams []*SpOutputParam
 }
 
@@ -48,7 +48,7 @@ func (r *SpResult) Scan(values ...interface{}) error {
 
 //Stored procedure output parameter name and value.
 type SpOutputParam struct {
-	Name string
+	Name  string
 	Value interface{}
 }
 
@@ -67,8 +67,8 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		return nil, err
 	}
 	for i, spParam := range spParams {
-		datalen := C.DBINT(0) 
-		datavalue :=  (*C.BYTE)(unsafe.Pointer(&([]byte{0})[0]))
+		datalen := C.DBINT(0)
+		datavalue := (*C.BYTE)(unsafe.Pointer(&([]byte{0})[0]))
 		maxOutputSize := C.DBINT(0)
 		status := C.BYTE(0)
 		if spParam.IsOutput {
@@ -85,7 +85,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			}
 		}
 		if i < len(params) || spParam.IsOutput {
-			if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), status, 
+			if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), status,
 				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
 				return nil, errors.New("dbrpcparam failed")
 			}
@@ -101,9 +101,9 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	}
 	//results
 	result := &SpResult{Status: -1}
-	result.Results, err =  conn.fetchResults()
+	result.Results, err = conn.fetchResults()
 	if err != nil {
-		
+
 		if len(conn.Error) != 0 {
 			return nil, errors.New(fmt.Sprintf("%s/n%s", conn.Error, conn.Message))
 		} else {
@@ -117,7 +117,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	//output params
 	numOutParams := int(C.dbnumrets(conn.dbproc))
 	result.OutputParams = make([]*SpOutputParam, numOutParams)
-	for i:=1; i <= numOutParams; i++ {
+	for i := 1; i <= numOutParams; i++ {
 		j := C.int(i)
 		len := C.dbretlen(conn.dbproc, j)
 		name := C.GoString(C.dbretname(conn.dbproc, j))
@@ -136,21 +136,21 @@ func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.
 	if err != nil {
 		return
 	}
-	datavalue =  (*C.BYTE)(unsafe.Pointer(&data[0]))
-	datalen = C.DBINT(len(data)) 
+	datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
+	datalen = C.DBINT(len(data))
 	//fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
 	return
 }
 
 //Stored procedure parameter definition
 type spParam struct {
-	Name string
+	Name        string
 	ParameterId int32
-	UserTypeId int32
-	IsOutput bool
-	MaxLength int16
-	Precision uint8
-	Scale uint8
+	UserTypeId  int32
+	IsOutput    bool
+	MaxLength   int16
+	Precision   uint8
+	Scale       uint8
 }
 
 //Read stored procedure parameters.
@@ -172,7 +172,7 @@ order by parameter_id
 	}
 	r := results[0]
 	spParams := make([]*spParam, len(r.Rows))
-	for i:=0; r.Next(); i++ {
+	for i := 0; r.Next(); i++ {
 		p := &spParam{}
 		err := r.Scan(&p.Name, &p.ParameterId, &p.UserTypeId, &p.IsOutput, &p.MaxLength, &p.Precision, &p.Scale)
 		if err != nil {

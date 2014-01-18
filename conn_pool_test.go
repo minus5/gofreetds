@@ -1,10 +1,10 @@
 package freetds
 
 import (
+	"fmt"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestPool(t *testing.T) {
@@ -49,7 +49,7 @@ func TestPoolBlock(t *testing.T) {
 	c1, _ := p.Get()
 	c2, _ := p.Get()
 
-	//check that poolGuard channel is full 
+	//check that poolGuard channel is full
 	full := false
 	select {
 	case p.poolGuard <- true:
@@ -57,7 +57,7 @@ func TestPoolBlock(t *testing.T) {
 		full = true
 	}
 	assert.True(t, full)
-	
+
 	go func() {
 		c3, _ := p.Get()
 		assert.Equal(t, c1, c3)
@@ -74,11 +74,11 @@ func TestPoolBlock(t *testing.T) {
 func TestPoolCleanup(t *testing.T) {
 	p, _ := NewConnPool(testDbConnStr(), 5)
 	conns := make([]*Conn, 5)
-	for i:=0; i<5; i++ {
+	for i := 0; i < 5; i++ {
 		c, _ := p.Get()
 		conns[i] = c
 	}
-	for i:=0; i<5; i++ {
+	for i := 0; i < 5; i++ {
 		c := conns[i]
 		p.Release(c)
 		c.expiresFromPool = time.Now().Add(-poolExpiresInterval - time.Second)
@@ -94,17 +94,16 @@ func BenchmarkConnPool(b *testing.B) {
 	done := make(chan bool)
 	repeat := 20
 	fmt.Printf("\n")
-  for i := 0; i < repeat; i++ {
-    go func(j int) {
-			conn, _ := p.Get()
-      defer p.Release(conn)
-			fmt.Printf("running: %d pool len: %d, connCount %d\n", j, len(p.pool), p.connCount)
-      conn.Exec("WAITFOR DELAY '00:00:01'")
-			done <- true
-    }(i)
-  }
 	for i := 0; i < repeat; i++ {
-		<- done
+		go func(j int) {
+			conn, _ := p.Get()
+			defer p.Release(conn)
+			fmt.Printf("running: %d pool len: %d, connCount %d\n", j, len(p.pool), p.connCount)
+			conn.Exec("WAITFOR DELAY '00:00:01'")
+			done <- true
+		}(i)
+	}
+	for i := 0; i < repeat; i++ {
+		<-done
 	}
 }
-

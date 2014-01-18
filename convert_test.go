@@ -1,10 +1,10 @@
 package freetds
 
 import (
+	"fmt"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
-	"fmt"
 )
 
 func TestInt(t *testing.T) {
@@ -75,16 +75,16 @@ func TestTime(t *testing.T) {
 	if diff > 3000000 && diff < -3000000 {
 		t.Error()
 		fmt.Printf("TestTime\n%s\n%s\ndiff: %d", value, value2t, diff)
-	}	
+	}
 }
 
 func TestTime4(t *testing.T) {
 	value := time.Date(2014, 1, 5, 23, 24, 0, 0, time.UTC)
-	testToSqlToType(t, SYBDATETIME4, value) 
+	testToSqlToType(t, SYBDATETIME4, value)
 }
 
 func TestBinary(t *testing.T) {
-	value := []byte{1,2,3,4,5,6,7,8,9}
+	value := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	testToSqlToType(t, SYBVARBINARY, value)
 }
 
@@ -94,4 +94,3 @@ func testToSqlToType(t *testing.T, typ int, value interface{}) {
 	value2 := sqlBufToType(typ, data)
 	assert.Equal(t, value, value2)
 }
-

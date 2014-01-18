@@ -14,11 +14,11 @@ func testResult() *Result {
 	r.addColumn("2", 0, 0)
 	r.addColumn("3", 0, 0)
 	r.addColumn("4", 0, 0)
-	for i:=0; i<3; i++ {
+	for i := 0; i < 3; i++ {
 		r.addValue(i, 0, 1)
 		r.addValue(i, 1, "two")
-		r.addValue(i, 2, now) 
-		r.addValue(i, 3, float64(123.45)) 
+		r.addValue(i, 2, now)
+		r.addValue(i, 3, float64(123.45))
 	}
 	return r
 }
@@ -30,7 +30,7 @@ func TestResultScan(t *testing.T) {
 	var tm time.Time
 	var f float64
 	assert.True(t, r.Next())
-	err := r.Scan(&i, &s, &tm, &f) 
+	err := r.Scan(&i, &s, &tm, &f)
 	assert.Nil(t, err)
 	assert.Equal(t, i, 1)
 	assert.Equal(t, s, "two")

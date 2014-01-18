@@ -8,9 +8,9 @@ import (
 
 //implements Stmt interface from http://golang.org/src/pkg/database/sql/driver/driver.go
 type MssqlStmt struct {
-	query string
+	query    string
 	numInput int
-	conn *Conn
+	conn     *Conn
 }
 
 func (s *MssqlStmt) Close() error {
@@ -37,15 +37,14 @@ func (s *MssqlStmt) Query(args []driver.Value) (driver.Rows, error) {
 	return &MssqlRows{results: results}, nil
 }
 
-
 //implements Rows interface from http://golang.org/src/pkg/database/sql/driver/driver.go
 type MssqlRows struct {
-	results []*Result 
-	currentRow int
+	results       []*Result
+	currentRow    int
 	currentResult int
 }
 
-func (r MssqlRows) result() *Result{
+func (r MssqlRows) result() *Result {
 	return r.results[r.currentResult]
 }
 
@@ -55,7 +54,7 @@ func (r *MssqlRows) Columns() []string {
 		cols[i] = c.Name
 	}
 	return cols
-} 
+}
 
 func (r *MssqlRows) Close() error {
 	return nil
@@ -87,25 +86,25 @@ func (r *MssqlRows) Next(dest []driver.Value) error {
 
 //implements Result interface from http://golang.org/src/pkg/database/sql/driver/driver.go
 type MssqlResult struct {
-	results []*Result 
+	results []*Result
 }
 
-func (r *MssqlResult) RowsAffected() (int64, error){
+func (r *MssqlResult) RowsAffected() (int64, error) {
 	if val := r.statusRowValue("rows_affected"); val != -1 {
 		return val, nil
-	} 
+	}
 	return 0, errors.New("no RowsAffected available")
 }
 
-func (r *MssqlResult) LastInsertId() (int64, error){
+func (r *MssqlResult) LastInsertId() (int64, error) {
 	if val := r.statusRowValue("last_insert_id"); val != -1 {
 		return val, nil
-	} 
+	}
 	return 0, errors.New("no LastInsertId available")
 }
 
 func (r *MssqlResult) statusRowValue(columnName string) int64 {
-	lastResult := r.results[len(r.results) -1]
+	lastResult := r.results[len(r.results)-1]
 	idx := -1
 	for i, col := range lastResult.Columns {
 		if columnName == col.Name {
@@ -114,10 +113,9 @@ func (r *MssqlResult) statusRowValue(columnName string) int64 {
 		}
 	}
 	if idx >= 0 {
-		if val, ok := lastResult.Rows[0][idx].(int64); ok  {
+		if val, ok := lastResult.Rows[0][idx].(int64); ok {
 			return val
 		}
 	}
 	return -1
 }
-

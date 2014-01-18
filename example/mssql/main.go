@@ -1,9 +1,9 @@
 package main
 
 import (
-	_ "gofreetds"
-	"fmt"
 	"database/sql"
+	"fmt"
+	_ "gofreetds"
 	"os"
 )
 
@@ -12,7 +12,7 @@ import (
 //  http://golang.org/pkg/database/sql/
 //  https://code.google.com/p/go-wiki/wiki/SQLInterface
 func main() {
-  //get connection string
+	//get connection string
 	connStr := os.Getenv("GOFREETDS_CONN_STR")
 	if connStr == "" {
 		panic("Set connection string for the pubs database in GOFREETDS_CONN_STR environment variable!\n")

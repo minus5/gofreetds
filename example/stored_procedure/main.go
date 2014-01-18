@@ -1,13 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"gofreetds"
 	"os"
-	"fmt"
 )
 
 func main() {
-  pool := connect()
+	pool := connect()
 	defer pool.Close()
 	prepareDb(pool)
 	//execute stored procedure
@@ -36,27 +36,27 @@ func main() {
 		var titleId, title, titleType string
 		if err := rstTitles.Scan(&titleId, &title, &titleType); err != nil {
 			panic(err)
-		}	
+		}
 		fmt.Printf("%s %-30s %s\n", titleId, title, titleType)
 	}
 }
 
 func printResult(rst *freetds.Result) {
 	//print query result, columns
-	for _,c := range rst.Columns {
+	for _, c := range rst.Columns {
 		fmt.Printf("%-20s", c.Name)
 	}
 	fmt.Printf("\n")
 	//rows
-	for _,r := range rst.Rows {
-		for _,v := range r {
+	for _, r := range rst.Rows {
+		for _, v := range r {
 			fmt.Printf("%-20v", v)
 		}
 		fmt.Printf("\n")
 	}
 }
 
-func connect() *freetds.ConnPool{
+func connect() *freetds.ConnPool {
 	connStr := os.Getenv("GOFREETDS_CONN_STR")
 	if connStr == "" {
 		panic("Set connection string for the pubs database in GOFREETDS_CONN_STR environment variable!\n")
@@ -71,7 +71,7 @@ func connect() *freetds.ConnPool{
 var prepareDbScripts = [...]string{`
 if exists(select * from sys.procedures where name = 'author_titles')
   drop procedure author_titles
-`,`	
+`, `	
 create procedure author_titles (
 		@au_id varchar(11)
 	)
@@ -87,9 +87,9 @@ create procedure author_titles (
 
 func prepareDb(pool *freetds.ConnPool) {
 	conn, err := pool.Get()
-	if (err != nil) {
+	if err != nil {
 		panic(err)
-	}	
+	}
 	defer conn.Close()
 	for _, s := range prepareDbScripts {
 		_, err := conn.Exec(s)

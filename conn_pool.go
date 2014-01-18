@@ -28,13 +28,13 @@ var poolCleanupInterval = time.Minute
 //  ...
 //  pool.Close()
 type ConnPool struct {
-	connStr string
-	maxConn int
-	pool []*Conn
-  poolGuard chan bool
-	poolMutex sync.Mutex
+	connStr       string
+	maxConn       int
+	pool          []*Conn
+	poolGuard     chan bool
+	poolMutex     sync.Mutex
 	cleanupTicker *time.Ticker
-	connCount int
+	connCount     int
 	spParamsCache map[string][]*spParam
 }
 
@@ -48,12 +48,12 @@ type ConnPool struct {
 //Returns err if fails to create initial connection.
 func NewConnPool(connStr string, maxConn int) (*ConnPool, error) {
 	p := &ConnPool{
-		connStr: connStr, 
-		maxConn: maxConn,
-		pool: []*Conn{},
-		poolGuard: make(chan bool, maxConn),
+		connStr:       connStr,
+		maxConn:       maxConn,
+		pool:          []*Conn{},
+		poolGuard:     make(chan bool, maxConn),
 		cleanupTicker: time.NewTicker(poolCleanupInterval),
-		connCount: 0,
+		connCount:     0,
 		spParamsCache: make(map[string][]*spParam),
 	}
 	conn, err := p.newConn()
@@ -75,7 +75,7 @@ func (p *ConnPool) newConn() (*Conn, error) {
 		conn.belongsToPool = p
 		//share stored procedure params cache between connections in the pool
 		conn.spParamsCache = p.spParamsCache
-		p.connCount++		
+		p.connCount++
 	}
 	return conn, err
 }
@@ -102,14 +102,14 @@ func (p *ConnPool) getPooled() *Conn {
 			p.pool = []*Conn{}
 		}
 		return conn
-	} 
+	}
 	return nil
 }
 
 func (p *ConnPool) addToPool(conn *Conn) {
 	p.poolMutex.Lock()
 	defer p.poolMutex.Unlock()
-	if (!conn.isDead()) {
+	if !conn.isDead() {
 		conn.expiresFromPool = time.Now().Add(poolExpiresInterval)
 		p.pool = append(p.pool, conn)
 	}
@@ -121,10 +121,10 @@ func (p *ConnPool) Release(conn *Conn) {
 		return
 	}
 	p.addToPool(conn)
-	<- p.poolGuard  //remove reservation
+	<-p.poolGuard //remove reservation
 }
 
-//Close connection pool. 
+//Close connection pool.
 //Closes all existing connections in the pool.
 func (p *ConnPool) Close() {
 	p.poolMutex.Lock()
@@ -135,13 +135,13 @@ func (p *ConnPool) Close() {
 	p.pool = nil
 }
 
-func (p *ConnPool) cleanup() { 
+func (p *ConnPool) cleanup() {
 	if len(p.pool) <= 1 {
 		return
 	}
 	p.poolMutex.Lock()
 	defer p.poolMutex.Unlock()
-	for i:=len(p.pool)-2; i>=0; i-- {
+	for i := len(p.pool) - 2; i >= 0; i-- {
 		conn := p.pool[i]
 		if conn.expiresFromPool.Before(time.Now()) {
 			conn.close()

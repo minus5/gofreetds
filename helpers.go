@@ -1,8 +1,8 @@
 package freetds
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
 func parseConnectionString(connStr string) *credentials {
@@ -13,7 +13,7 @@ func parseConnectionString(connStr string) *credentials {
 		if len(kv) == 2 {
 			key := strings.ToLower(strings.Trim(kv[0], " "))
 			value := kv[1]
-			switch key{
+			switch key {
 			case "server", "host":
 				crd.host = value
 			case "database":
@@ -32,8 +32,8 @@ func parseConnectionString(connStr string) *credentials {
 
 //usefull for testing n
 func printResults(results []*Result) {
-  fmt.Printf("results %v", results)
-  for _, r := range results {
+	fmt.Printf("results %v", results)
+	for _, r := range results {
 		if r.Rows != nil {
 			fmt.Printf("\n\nColums:\n")
 			for j, c := range r.Columns {
@@ -46,7 +46,7 @@ func printResults(results []*Result) {
 				fmt.Printf("\n")
 			}
 		}
-    fmt.Printf("rows affected: %d\n", r.RowsAffected)
-    fmt.Printf("return value: %d\n", r.ReturnValue)
-  }
+		fmt.Printf("rows affected: %d\n", r.RowsAffected)
+		fmt.Printf("return value: %d\n", r.ReturnValue)
+	}
 }

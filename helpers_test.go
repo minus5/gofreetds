@@ -6,7 +6,7 @@ import (
 
 func TestParseConnectionString(t *testing.T) {
 	str1 := "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror"
-	testCredentials(t, parseConnectionString(str1)) 
+	testCredentials(t, parseConnectionString(str1))
 
 	alternateNaming := "Server=myServerAddress;Database=myDataBase;User_Id=myUsername;Password=myPassword;Failover_Partner=myMirror"
 	testCredentials(t, parseConnectionString(alternateNaming))
@@ -18,7 +18,7 @@ func TestParseConnectionString(t *testing.T) {
 	testCredentials(t, parseConnectionString(alternateNaming2))
 }
 
-func testCredentials (t *testing.T, crd *credentials) {
+func testCredentials(t *testing.T, crd *credentials) {
 	if crd == nil {
 		t.Error()
 	}
@@ -33,8 +33,8 @@ func testCredentials (t *testing.T, crd *credentials) {
 	}
 	if crd.pwd != "myPassword" {
 		t.Error()
-	} 
+	}
 	if crd.mirrorHost != "myMirror" {
 		t.Error()
-	} 
+	}
 }
