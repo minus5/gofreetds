@@ -26,3 +26,5 @@ _testmain.go
 todo
 
 /example/listic
+
+*.out

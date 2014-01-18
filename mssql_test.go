@@ -9,7 +9,7 @@ import (
 )
 
 func open() (*sql.DB, error) {
-	return sql.Open("mssql", "user=ianic;pwd=ianic;database=pubs;host=iow")
+	return sql.Open("mssql", testDbConnStr())
 }
 
 func TestGoSqlOpenConnection(t *testing.T) {
@@ -17,6 +17,14 @@ func TestGoSqlOpenConnection(t *testing.T) {
 	if err != nil || db == nil {
 		t.Error(err) 
 	}
+}
+
+func TestMssqlConnOpen(t *testing.T) {
+	d := &MssqlDriver{}
+	c, err := d.Open(testDbConnStr())
+	assert.Nil(t, err)
+	assert.IsType(t, &MssqlConn{}, c)
+	c.Close()
 }
 
 func TestGoSqlDbQueryRow(t *testing.T) {
@@ -66,15 +74,6 @@ func TestGoSqlPrepareQuery(t *testing.T) {
 func TestLastInsertIdRowsAffected(t *testing.T) {
 	db, _ := open()
 	createTestTable(t, db, "test_last_insert_id", "") 
-	// db.Exec(`
-	// if exists(select * from sys.tables where name = 'test_last_insert_id')
-	//   drop table test_last_insert_id
-	// ;
-  // create table test_last_insert_id (
-	//   id int not null identity,
-	//   name varchar(255) 
-  // ) 
-  // `)
 	r, err := db.Exec("insert into test_last_insert_id values(?)", "pero")
 	assert.Nil(t, err)
 	assert.NotNil(t, r) 
