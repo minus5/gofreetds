@@ -60,9 +60,9 @@ func TestPoolBlock(t *testing.T) {
 
 	go func() {
 		c3, _ := p.Get()
-		assert.Equal(t, c1, c3)
+		assert.Equal(t, c2, c3)
 		c4, _ := p.Get()
-		assert.Equal(t, c2, c4)
+		assert.Equal(t, c1, c4)
 		p.Release(c3)
 		p.Release(c4)
 		p.Close()
@@ -86,6 +86,21 @@ func TestPoolCleanup(t *testing.T) {
 	assert.Equal(t, len(p.pool), 5)
 	p.cleanup()
 	assert.Equal(t, len(p.pool), 1)
+}
+
+func TestPoolReturnsLastUsedConnection(t *testing.T) {
+	p, _ := NewConnPool(testDbConnStr(), 5)
+	c1, _ := p.Get()
+	c2, _ := p.Get()
+	assert.Equal(t, 0, len(p.pool))
+	c1.Close()
+	assert.Equal(t, 1, len(p.pool))
+	c2.Close()
+	assert.Equal(t, 2, len(p.pool))
+	assert.Equal(t, c2, p.pool[0])
+	assert.Equal(t, c1, p.pool[1])
+	c3, _ := p.Get()
+	assert.Equal(t, c2, c3)
 }
 
 func BenchmarkConnPool(b *testing.B) {

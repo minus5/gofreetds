@@ -111,7 +111,11 @@ func (p *ConnPool) addToPool(conn *Conn) {
 	defer p.poolMutex.Unlock()
 	if !conn.isDead() {
 		conn.expiresFromPool = time.Now().Add(poolExpiresInterval)
-		p.pool = append(p.pool, conn)
+		//release to the top of the pool
+		newPool := []*Conn{}
+		newPool = append(newPool, conn)
+		newPool = append(newPool, p.pool...)
+		p.pool = newPool
 	}
 }
 
@@ -149,4 +153,13 @@ func (p *ConnPool) cleanup() {
 			p.pool = append(p.pool[:i], p.pool[i+1:]...)
 		}
 	}
+}
+
+//Statistic about connections in the pool.
+func (p* ConnPool) Stat() (max, count, active int) {
+	max = p.maxConn
+	count = p.connCount
+	inactive := len(p.pool)
+	active = count - inactive
+	return
 }
