@@ -10,10 +10,10 @@ var now = time.Now()
 
 func testResult() *Result {
 	r := NewResult()
-	r.addColumn("1", 0, 0)
-	r.addColumn("2", 0, 0)
-	r.addColumn("3", 0, 0)
-	r.addColumn("4", 0, 0)
+	r.addColumn("I", 0, 0)
+	r.addColumn("S", 0, 0)
+	r.addColumn("Tm", 0, 0)
+	r.addColumn("F", 0, 0)
 	for i := 0; i < 3; i++ {
 		r.addValue(i, 0, 1)
 		r.addValue(i, 1, "two")
@@ -45,4 +45,48 @@ func TestResultNext(t *testing.T) {
 	assert.True(t, r.Next())
 	assert.True(t, r.Next())
 	assert.False(t, r.Next())
+}
+
+func TestResultScanWithoutNext(t *testing.T) {
+	r := testResult()
+	var i int
+	var s string
+	var tm time.Time
+	var f float64
+	err := r.Scan(&i, &s, &tm, &f)
+	assert.NotNil(t, err)
+}
+
+func TestResultScanOnNonPointerValues(t *testing.T) {
+	r := testResult()
+	var i int
+	var s string
+	var tm time.Time
+	var f float64
+	assert.True(t, r.Next())
+	err := r.Scan(&i, &s, &tm, f)
+	assert.NotNil(t, err) //error is raised
+}
+
+func TestResultScanIntoStruct(t *testing.T) {
+	r := testResult()
+	var s struct {
+		I int
+		S string
+		Tm time.Time
+		F float64
+	}
+	r.Next()
+	err := r.Scan(&s)
+	assert.Nil(t, err) 
+	assert.Equal(t, s.I, 1)
+	assert.Equal(t, s.S, "two")
+	assert.Equal(t, s.Tm, now)
+	assert.Equal(t, s.F, float64(123.45)) 
+	assert.Equal(t, 4, r.scanCount)
+
+	err = r.MustScan(4, &s)
+	assert.Nil(t, err)
+	err = r.MustScan(5, &s)
+	assert.NotNil(t, err)
 }
