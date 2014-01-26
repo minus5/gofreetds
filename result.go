@@ -62,7 +62,7 @@ func (r *Result) Next() bool {
 
 //Scan copies the columns in the current row into the values pointed at by dest.
 func (r *Result) Scan(dest ...interface{}) error {
-	return assingValues(r.Rows[r.currentRow], dest)
+	return assignValues(r.Rows[r.currentRow], dest)
 }
 
 //assignValues copies to dest values in src
@@ -72,7 +72,7 @@ func (r *Result) Scan(dest ...interface{}) error {
 //     for example if dest if int64 and src int32
 //     this version requires exact type match
 //     reference: http://golang.org/src/pkg/database/sql/convert.go
-func assingValues(src []interface{}, dest []interface{}) error {
+func assignValues(src, dest []interface{}) error {
 	if len(dest) > len(src) {
 		return errors.New(fmt.Sprintf("More dest values %d than src values %d.", len(dest), len(src)))
 	}

@@ -43,7 +43,7 @@ func (r *SpResult) Scan(values ...interface{}) error {
 	for i := 0; i < len(r.OutputParams); i++ {
 		outputValues[i] = r.OutputParams[i].Value
 	}
-	return assingValues(outputValues, values)
+	return assignValues(outputValues, values)
 }
 
 //Stored procedure output parameter name and value.
