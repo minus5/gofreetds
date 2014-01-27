@@ -10,10 +10,10 @@ var now = time.Now()
 
 func testResult() *Result {
 	r := NewResult()
-	r.addColumn("I", 0, 0)
-	r.addColumn("S", 0, 0)
-	r.addColumn("Tm", 0, 0)
-	r.addColumn("F", 0, 0)
+	r.addColumn("i", 0, 0)
+	r.addColumn("s", 0, 0)
+	r.addColumn("tm", 0, 0)
+	r.addColumn("f", 0, 0)
 	for i := 0; i < 3; i++ {
 		r.addValue(i, 0, 1)
 		r.addValue(i, 1, "two")

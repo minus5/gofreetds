@@ -102,7 +102,7 @@ func (r *Result) MustScan(cnt int, dest ...interface{}) error {
 //Struct filed name must match database column name.
 func (r *Result) scanStruct(s *reflect.Value) error {
 	for i, col := range r.Columns {
-		f := s.FieldByName(col.Name)
+		f := s.FieldByName(camelize(col.Name))
 		if f.IsValid() {
 			if f.CanSet() {
 				if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
