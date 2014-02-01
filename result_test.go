@@ -14,11 +14,29 @@ func testResult() *Result {
 	r.addColumn("s", 0, 0)
 	r.addColumn("tm", 0, 0)
 	r.addColumn("f", 0, 0)
+
+	r.addColumn("int", 0, 0)
+	r.addColumn("int8", 0, 0)
+	r.addColumn("int16", 0, 0)
+	r.addColumn("int32", 0, 0)
+	r.addColumn("int64", 0, 0)
+
+	r.addColumn("float32", 0, 0)
+	r.addColumn("float64", 0, 0)
 	for i := 0; i < 3; i++ {
-		r.addValue(i, 0, 1)
+		r.addValue(i, 0, int32(1))
 		r.addValue(i, 1, "two")
 		r.addValue(i, 2, now)
 		r.addValue(i, 3, float64(123.45))
+
+		r.addValue(i, 4, int(1))
+		r.addValue(i, 5, int8(2))
+		r.addValue(i, 6, int16(3))
+		r.addValue(i, 7, int32(4))
+		r.addValue(i, 8, int64(5))
+
+		r.addValue(i, 9, float32(5.5))
+		r.addValue(i, 10, float64(6.5))
 	}
 	return r
 }
@@ -89,4 +107,28 @@ func TestResultScanIntoStruct(t *testing.T) {
 	assert.Nil(t, err)
 	err = r.MustScan(5, &s)
 	assert.NotNil(t, err)
+}
+
+func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
+	r := testResult()
+	var s struct {
+		Int int
+		Int8 int
+		Int16 int
+		Int32 int
+		Int64 int
+		Float32 float64
+		Float64 float32
+	}
+	r.Next()
+	err := r.Scan(&s)
+	assert.Nil(t, err) 
+	assert.Equal(t, s.Int, 1)
+	assert.Equal(t, s.Int8, 2)
+	assert.Equal(t, s.Int16, 3)
+	assert.Equal(t, s.Int32, 4)
+	assert.Equal(t, s.Int64, 5)
+
+	assert.Equal(t, s.Float32, 5.5)
+	assert.Equal(t, s.Float64, 6.5)
 }

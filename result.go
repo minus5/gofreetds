@@ -3,7 +3,6 @@ package freetds
 import (
 	"errors"
 	"fmt"
-	"time"
 	"reflect"
 )
 
@@ -105,7 +104,8 @@ func (r *Result) scanStruct(s *reflect.Value) error {
 		f := s.FieldByName(camelize(col.Name))
 		if f.IsValid() {
 			if f.CanSet() {
-				if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
+				if err := convertAssign(f.Addr().Interface(), r.Rows[r.currentRow][i]); err != nil {
+				//if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
 					return err
 				}
 				r.scanCount++
@@ -133,87 +133,16 @@ func isPointer(p interface{}) bool {
 
 //assignValues copies to dest values in src
 //dest should be a pointer type
-//error is returned if types don't match
-//TODO conversion can be performend for some types
-//     for example if dest is int64 and src int32
-//     this version requires exact type match
-//     reference convertAssign func from: http://golang.org/src/pkg/database/sql/convert.go
+//error is returned if types don't match and conversion failed
 func assignValues(src, dest []interface{}) error {
 	if len(dest) > len(src) {
 		return errors.New(fmt.Sprintf("More dest values %d than src values %d.", len(dest), len(src)))
 	}
 	for i, d := range dest {
-		err := assignValue(src[i], d)
+		err := convertAssign(d, src[i])
 		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
-
-func assignValue(src, dest interface{}) error { 
-	if !isPointer(dest) {
-		return errors.New("Destination not a pointer.")
-	}
-	var ok bool
-	switch f := dest.(type) {
-	case *string:
-		*f, ok = src.(string)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to string.", src))
-		}
-	case *int:
-		*f, ok = src.(int)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to int.", src))
-		}
-	case *uint8:
-		*f, ok = src.(uint8)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to uint8.", src))
-		}
-	case *int16:
-		*f, ok = src.(int16)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to int16.", src))
-		}
-	case *int32:
-		*f, ok = src.(int32)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to int32.", src))
-		}
-	case *int64:
-		*f, ok = src.(int64)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to int64.", src))
-		}
-	case *float32:
-		*f, ok = src.(float32)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to float32.", src))
-		}
-	case *float64:
-		*f, ok = src.(float64)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to float64.", src))
-		}
-	case *bool:
-		*f, ok = src.(bool)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to bool.", src))
-		}
-	case *[]byte:
-		*f, ok = src.([]byte)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to []byte.", src))
-		}
-	case *time.Time:
-		*f, ok = src.(time.Time)
-		if !ok {
-			return errors.New(fmt.Sprintf("Failed to convert %T to time.Time.", src))
-		}
-	default:
-		return errors.New(fmt.Sprintf("Unknown type in assignValue %T.", src))
 	}
 	return nil
 }
