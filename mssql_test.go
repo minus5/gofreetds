@@ -9,7 +9,7 @@ import (
 )
 
 func open() (*sql.DB, error) {
-	return sql.Open("mssql", testDbConnStr())
+	return sql.Open("mssql", testDbConnStr(1))
 }
 
 func TestGoSqlOpenConnection(t *testing.T) {
@@ -21,7 +21,7 @@ func TestGoSqlOpenConnection(t *testing.T) {
 
 func TestMssqlConnOpen(t *testing.T) {
 	d := &MssqlDriver{}
-	c, err := d.Open(testDbConnStr())
+	c, err := d.Open(testDbConnStr(1))
 	assert.Nil(t, err)
 	assert.IsType(t, &MssqlConn{}, c)
 	c.Close()

@@ -51,7 +51,7 @@ create procedure freetds_return_value as
   return -5`}
 
 func ConnectToTestDb(t *testing.T) *Conn {
-	conn, err := ConnectWithConnectionString(testDbConnStr())
+	conn, err := ConnectWithConnectionString(testDbConnStr(1))
 	if err != nil {
 		t.Errorf("can't connect to the test database")
 		return nil
@@ -59,12 +59,13 @@ func ConnectToTestDb(t *testing.T) *Conn {
 	return conn
 }
 
-func testDbConnStr() string {
+func testDbConnStr(maxPoolSize int) string {
 	connStr := os.Getenv("GOFREETDS_CONN_STR")
 	mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
 	if mirror != "" {
 		connStr = fmt.Sprintf("%s;mirror=%s", connStr, mirror)
 	}
+	connStr = fmt.Sprintf("%s;max_pool_size=%d", connStr, maxPoolSize)
 	return connStr
 }
 
@@ -357,4 +358,27 @@ func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
 	sql = strings.Replace(sql, "table_name", name, 3)
 	_, err := conn.Exec(sql)
 	assert.Nil(t, err)
+}
+
+
+
+//usefull for testing n
+func printResults(results []*Result) {
+	fmt.Printf("results %v", results)
+	for _, r := range results {
+		if r.Rows != nil {
+			fmt.Printf("\n\nColums:\n")
+			for j, c := range r.Columns {
+				fmt.Printf("\t%3d%20s%10d%10d\n", j, c.Name, c.DbType, c.DbSize)
+			}
+			for i, _ := range r.Rows {
+				for j, _ := range r.Columns {
+					fmt.Printf("value[%2d, %2d]: %v\n", i, j, r.Rows[i][j])
+				}
+				fmt.Printf("\n")
+			}
+		}
+		fmt.Printf("rows affected: %d\n", r.RowsAffected)
+		fmt.Printf("return value: %d\n", r.ReturnValue)
+	}
 }

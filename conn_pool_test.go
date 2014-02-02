@@ -8,7 +8,7 @@ import (
 )
 
 func TestPool(t *testing.T) {
-	p, err := NewConnPool(testDbConnStr(), 2)
+	p, err := NewConnPool(testDbConnStr(2))
 	defer p.Close()
 	assert.Nil(t, err)
 	assert.NotNil(t, p)
@@ -28,7 +28,7 @@ func TestPool(t *testing.T) {
 }
 
 func TestPoolRelease(t *testing.T) {
-	p, _ := NewConnPool(testDbConnStr(), 2)
+	p, _ := NewConnPool(testDbConnStr(2))
 	assert.Equal(t, p.connCount, 1)
 	c1, _ := p.Get()
 	c2, _ := p.Get()
@@ -45,7 +45,7 @@ func TestPoolRelease(t *testing.T) {
 }
 
 func TestPoolBlock(t *testing.T) {
-	p, _ := NewConnPool(testDbConnStr(), 2)
+	p, _ := NewConnPool(testDbConnStr(2))
 	c1, _ := p.Get()
 	c2, _ := p.Get()
 
@@ -72,7 +72,7 @@ func TestPoolBlock(t *testing.T) {
 }
 
 func TestPoolCleanup(t *testing.T) {
-	p, _ := NewConnPool(testDbConnStr(), 5)
+	p, _ := NewConnPool(testDbConnStr(5))
 	conns := make([]*Conn, 5)
 	for i := 0; i < 5; i++ {
 		c, _ := p.Get()
@@ -89,7 +89,7 @@ func TestPoolCleanup(t *testing.T) {
 }
 
 func TestPoolReturnsLastUsedConnection(t *testing.T) {
-	p, _ := NewConnPool(testDbConnStr(), 5)
+	p, _ := NewConnPool(testDbConnStr(5))
 	c1, _ := p.Get()
 	c2, _ := p.Get()
 	assert.Equal(t, 0, len(p.pool))
@@ -104,7 +104,7 @@ func TestPoolReturnsLastUsedConnection(t *testing.T) {
 }
 
 func BenchmarkConnPool(b *testing.B) {
-	p, _ := NewConnPool(testDbConnStr(), 4)
+	p, _ := NewConnPool(testDbConnStr(4))
 	defer p.Close()
 	done := make(chan bool)
 	repeat := 20
@@ -127,7 +127,7 @@ func TestMirroringConnPool(t *testing.T) {
 	if !IsMirrorHostDefined() {
 		t.Skip("mirror host is not defined")
 	}
-	p, err := NewConnPool(testDbConnStr(), 2)
+	p, err := NewConnPool(testDbConnStr(2))
 	defer p.Close()
 	assert.Nil(t, err)
 	c1, err := p.Get()

@@ -56,10 +56,6 @@ import "C"
 
 var connections map[int64]*Conn = make(map[int64]*Conn)
 
-type credentials struct {
-	user, pwd, host, database, mirrorHost string
-}
-
 //Connection to the database.
 type Conn struct {
 	dbproc          *C.DBPROCESS
@@ -106,7 +102,7 @@ func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
 //
 //Mirror is optional, other params are mandatory.
 func ConnectWithConnectionString(connStr string) (*Conn, error) {
-	return connectWithCredentials(parseConnectionString(connStr))
+	return connectWithCredentials(NewCredentials(connStr))
 }
 
 func connectWithCredentials(crd *credentials) (*Conn, error) {

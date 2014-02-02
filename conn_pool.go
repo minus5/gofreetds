@@ -20,7 +20,7 @@ var poolCleanupInterval = time.Minute
 //But there is always one connection in the pool.
 //
 //Example:
-//  pool, err := NewConnPool("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword", 100)
+//  pool, err := NewConnPool("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword")
 //  ...
 //  conn, err := pool.Get()
 //  //use conn
@@ -46,12 +46,10 @@ type ConnPool struct {
 //There is always one connection in the pool.
 //
 //Returns err if fails to create initial connection.
-func NewConnPool(connStr string, maxConn int) (*ConnPool, error) {
+func NewConnPool(connStr string) (*ConnPool, error) {
 	p := &ConnPool{
 		connStr:       connStr,
-		maxConn:       maxConn,
 		pool:          []*Conn{},
-		poolGuard:     make(chan bool, maxConn),
 		cleanupTicker: time.NewTicker(poolCleanupInterval),
 		connCount:     0,
 		spParamsCache: make(map[string][]*spParam),
@@ -60,6 +58,8 @@ func NewConnPool(connStr string, maxConn int) (*ConnPool, error) {
 	if err != nil {
 		return nil, err
 	}
+	p.maxConn = conn.maxPoolSize
+	p.poolGuard = make(chan bool, p.maxConn)
 	p.addToPool(conn)
 	go func() {
 		for _ = range p.cleanupTicker.C {

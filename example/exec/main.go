@@ -12,7 +12,7 @@ func main() {
 	if connStr == "" {
 		panic("Set connection string for the pubs database in GOFREETDS_CONN_STR environment variable!\n")
 	}
-	pool, err := freetds.NewConnPool(connStr, 1)
+	pool, err := freetds.NewConnPool(connStr)
 	if err != nil {
 		panic(err)
 	}
