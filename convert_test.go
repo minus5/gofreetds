@@ -17,23 +17,29 @@ func TestInt(t *testing.T) {
 
 	_, err := typeToSqlBuf(SYBINT4, "pero")
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Could not convert string to int32.")
 }
 
 func TestInt16(t *testing.T) {
 	testToSqlToType(t, SYBINT2, int16(32767))
-	testToSqlToType(t, SYBINT2, int16(-32768))
-	_, err := typeToSqlBuf(SYBINT2, 123)
-	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "Could not convert int to int16.")
-
-	_, err = typeToSqlBuf(SYBINT2, int64(1))
-	assert.NotNil(t, err)
+	testToSqlToType(t, SYBINT2, int16(-32768)) 
+	testToSqlToType(t, SYBINT2, 123) 
+	//overflow
+	data, err := typeToSqlBuf(SYBINT2, 32768)
+	assert.Nil(t, err)
+	i16 := sqlBufToType(SYBINT2, data)
+	assert.Equal(t, i16, -32768)
+	//error
+	 _, err = typeToSqlBuf(SYBINT2, "pero")
+	 assert.NotNil(t, err)
 }
 
 func TestInt8(t *testing.T) {
 	testToSqlToType(t, SYBINT1, uint8(127))
 	testToSqlToType(t, SYBINT1, uint8(255))
+	data, err := typeToSqlBuf(SYBINT1, 127)
+	assert.Nil(t, err)
+	value, _ := sqlBufToType(SYBINT1, data).(uint8)
+	assert.Equal(t, int(value), 127)
 }
 
 func TestInt64(t *testing.T) {
@@ -41,15 +47,11 @@ func TestInt64(t *testing.T) {
 	testToSqlToType(t, SYBINT8, int64(9223372036854775807))
 }
 
-// func TestString(t *testing.T) {
-// 	testToSqlToType(t, SYBNVARCHAR, "pero")
-// 	testToSqlToType(t, SYBNVARCHAR, "pero ždero")
-// 	testToSqlToType(t, SYBNVARCHAR, "šđčćž")
-// }
-
 func TestFloat(t *testing.T) {
 	testToSqlToType(t, SYBFLT8, float64(123.45))
+	testToSqlToType(t, SYBFLT8, float32(123.5))
 	testToSqlToType(t, SYBREAL, float32(123.45))
+	testToSqlToType(t, SYBREAL, float64(123.5))
 }
 
 func TestBool(t *testing.T) {

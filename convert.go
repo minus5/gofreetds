@@ -113,66 +113,34 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	buf := new(bytes.Buffer)
 	switch datatype {
 	case SYBINT1:
-		{
-			if typedValue, ok := value.(uint8); ok {
-				err = binary.Write(buf, binary.LittleEndian, typedValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to uint8.", value))
-			}
+		var ui8 uint8
+		if err = convertAssign(&ui8, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, ui8)
 		}
 	case SYBINT2:
-		{
-			if typedValue, ok := value.(int16); ok {
-				err = binary.Write(buf, binary.LittleEndian, typedValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to int16.", value))
-			}
+		var i16 int16
+		if err = convertAssign(&i16, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, i16)
 		}
 	case SYBINT4:
-		{
-			var int32Value int32
-			switch value.(type) {
-			case int:
-				{
-					intValue, _ := value.(int)
-					int32Value = int32(intValue)
-				}
-			case int32:
-				int32Value, _ = value.(int32)
-			case int64:
-				intValue, _ := value.(int64)
-				int32Value = int32(intValue)
-			default:
-				{
-					err = errors.New(fmt.Sprintf("Could not convert %T to int32.", value))
-					return
-				}
-			}
-			err = binary.Write(buf, binary.LittleEndian, int32Value)
+		var i32 int32
+		if err = convertAssign(&i32, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, i32)
 		}
 	case SYBINT8:
-		{
-			if typedValue, ok := value.(int64); ok {
-				err = binary.Write(buf, binary.LittleEndian, typedValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to int64.", value))
-			}
+		var i64 int64
+		if err = convertAssign(&i64, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, i64)
 		}
 	case SYBREAL:
-		{
-			if typedValue, ok := value.(float32); ok {
-				err = binary.Write(buf, binary.LittleEndian, typedValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to float32.", value))
-			}
+		var f32 float32
+		if err = convertAssign(&f32, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, f32)
 		}
 	case SYBFLT8:
-		{
-			if typedValue, ok := value.(float64); ok {
-				err = binary.Write(buf, binary.LittleEndian, typedValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
-			}
+		var f64 float64
+		if err = convertAssign(&f64, value); err == nil {
+			err = binary.Write(buf, binary.LittleEndian, f64)
 		}
 	case SYBBIT, SYBBITN:
 		if typedValue, ok := value.(bool); ok {
@@ -186,82 +154,70 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to bool.", value))
 		}
 	case SYBMONEY4:
-		{
-			if typedValue, ok := value.(float64); ok {
-				intValue := int32(typedValue * 10000)
-				err = binary.Write(buf, binary.LittleEndian, intValue)
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
-			}
+		var f64 float64
+		if err = convertAssign(&f64, value); err == nil {
+			i32 := int32(f64 * 10000)
+			err = binary.Write(buf, binary.LittleEndian, i32)
 		}
 	case SYBMONEY:
-		{
-			if typedValue, ok := value.(float64); ok {
-				intValue := int64(typedValue * 10000)
-				high := int32(intValue >> 32)
-				low := uint32(intValue - int64(high))
-				err = binary.Write(buf, binary.LittleEndian, high)
-				if err == nil {
-					err = binary.Write(buf, binary.LittleEndian, low)
-				}
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to float64.", value))
+		var f64 float64
+		if err = convertAssign(&f64, value); err == nil {
+			intValue := int64(f64 * 10000)
+			high := int32(intValue >> 32)
+			low := uint32(intValue - int64(high))
+			err = binary.Write(buf, binary.LittleEndian, high)
+			if err == nil {
+				err = binary.Write(buf, binary.LittleEndian, low)
 			}
 		}
 	case SYBDATETIME:
-		{
-			if typedValue, ok := value.(time.Time); ok {
-				typedValue = typedValue.UTC()
-				days := int32(typedValue.Sub(sqlStartTime).Hours() / 24)
-				secs := uint32((((typedValue.Hour()*60+typedValue.Minute())*60)+typedValue.Second())*300 +
-					typedValue.Nanosecond()/3333333)
-				err = binary.Write(buf, binary.LittleEndian, days)
-				if err == nil {
-					err = binary.Write(buf, binary.LittleEndian, secs)
-				}
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
+		if tm, ok := value.(time.Time); ok {
+			tm = tm.UTC()
+			days := int32(tm.Sub(sqlStartTime).Hours() / 24)
+			secs := uint32((((tm.Hour()*60+tm.Minute())*60)+tm.Second())*300 +
+				tm.Nanosecond()/3333333)
+			err = binary.Write(buf, binary.LittleEndian, days)
+			if err == nil {
+				err = binary.Write(buf, binary.LittleEndian, secs)
 			}
+		} else {
+			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
 		}
 	case SYBDATETIME4:
-		{
-			if typedValue, ok := value.(time.Time); ok {
-				typedValue = typedValue.UTC()
-				days := uint16(typedValue.Sub(sqlStartTime).Hours() / 24)
-				mins := uint16(typedValue.Hour()*60 + typedValue.Minute())
-				err = binary.Write(buf, binary.LittleEndian, days)
-				if err == nil {
-					err = binary.Write(buf, binary.LittleEndian, mins)
-				}
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
+		if tm, ok := value.(time.Time); ok {
+			tm = tm.UTC()
+			days := uint16(tm.Sub(sqlStartTime).Hours() / 24)
+			mins := uint16(tm.Hour()*60 + tm.Minute())
+			err = binary.Write(buf, binary.LittleEndian, days)
+			if err == nil {
+				err = binary.Write(buf, binary.LittleEndian, mins)
 			}
+		} else {
+			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
 		}
 	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
-		if typedValue, ok := value.([]byte); ok {
-			data = append(typedValue, []byte{0}[0])
+		if buf, ok := value.([]byte); ok {
+			data = append(buf, []byte{0}[0])
 			return
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to []byte.", value))
 		}
 	default:
-		{
-			if typedValue, ok := value.(string); ok {
-				data = []byte(typedValue)
-				if datatype == XSYBNVARCHAR ||
-					datatype == XSYBNCHAR {
-					//FIXME - adding len bytes to the end of the buf
-					//        realy don't understand why this is necessary
-					//        come to this solution by try and error
-					l := len(data)
-					for i := 0; i < l; i++ {
-						data = append(data, byte(0))
-					}
+		if str, ok := value.(string); ok {
+			data = []byte(str)
+			if datatype == XSYBNVARCHAR ||
+				datatype == XSYBNCHAR {
+				//FIXME - adding len bytes to the end of the buf
+				//        realy don't understand why this is necessary
+				//        come to this solution by try and error
+				l := len(data)
+				for i := 0; i < l; i++ {
+					data = append(data, byte(0))
 				}
-				return
-			} else {
-				err = errors.New(fmt.Sprintf("Could not convert %T to string.", value))
 			}
+			return
+		} else {
+			err = errors.New(fmt.Sprintf("Could not convert %T to string.", value))
 		}
 	}
 	data = buf.Bytes()

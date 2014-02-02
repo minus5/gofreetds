@@ -169,7 +169,7 @@ func convertAssign(dest, src interface{}) error {
 			return nil
 		}
 	case reflect.Float32, reflect.Float64:
-		switch dv.Kind() {
+		switch sv.Kind() {
 		case reflect.Float32, reflect.Float64:
 			dv.SetFloat(sv.Float())
 			return nil

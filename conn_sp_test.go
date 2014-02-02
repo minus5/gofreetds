@@ -45,6 +45,30 @@ func TestExecSpInputParams(t *testing.T) {
 	assert.Equal(t, 357, rst.Status)
 }
 
+func TestExecSpInputParamsTypes(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_input_params3", `
+    @p1 int = 0, @p2 smallint, @p3 bigint, @p4 tinyint, @p5 money, @p6 real as 
+    select @p1, @p2, @p3, @p4, @p5, @p6
+    return 1`)
+	assert.Nil(t, err)
+	//all input types are int, but they are converted to apropriate sql types
+	rst, err := conn.ExecSp("test_input_params3", 1, 2 ,3, 4, 5, 6)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, rst.Status)
+	var p1, p2, p3, p4, p5, p6 int
+	result := rst.Results[0]
+	result.Next()
+	//returned as various types, and then converted to int
+	result.Scan(&p1, &p2, &p3, &p4, &p5, &p6)
+	assert.Equal(t, 1, p1)
+	assert.Equal(t, 2, p2)
+	assert.Equal(t, 3, p3)
+	assert.Equal(t, 4, p4)
+	assert.Equal(t, 5, p5)
+	assert.Equal(t, 6, p6)
+}
+
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10) as select @p1, @p2, @p3, @p4, @p5;  return")
