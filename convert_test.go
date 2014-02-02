@@ -1,98 +1,232 @@
+// This is code from http://golang.org/src/pkg/database/sql/convert_test.go
+
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package freetds
 
 import (
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
+	"reflect"
 	"testing"
 	"time"
 )
 
-func TestInt(t *testing.T) {
-	testToSqlToType(t, SYBINT4, 2147483647)
-	testToSqlToType(t, SYBINT4, -2147483648)
+var someTime = time.Unix(123, 0)
+var answer int64 = 42
 
-	testToSqlToType(t, SYBINT4, int(2147483647))
-	testToSqlToType(t, SYBINT4, int32(2147483647))
-	testToSqlToType(t, SYBINT4, int64(2147483647))
+type conversionTest struct {
+	s, d interface{} // source and destination
 
-	_, err := typeToSqlBuf(SYBINT4, "pero")
-	assert.NotNil(t, err)
+	// following are used if they're non-zero
+	wantint   int64
+	wantuint  uint64
+	wantstr   string
+	wantbytes []byte
+	wantraw   RawBytes
+	wantf32   float32
+	wantf64   float64
+	wanttime  time.Time
+	wantbool  bool // used if d is of type *bool
+	wanterr   string
+	wantiface interface{}
+	wantptr   *int64 // if non-nil, *d's pointed value must be equal to *wantptr
+	wantnil   bool   // if true, *d must be *int64(nil)
 }
 
-func TestInt16(t *testing.T) {
-	testToSqlToType(t, SYBINT2, int16(32767))
-	testToSqlToType(t, SYBINT2, int16(-32768)) 
-	testToSqlToType(t, SYBINT2, 123) 
-	//overflow
-	data, err := typeToSqlBuf(SYBINT2, 32768)
-	assert.Nil(t, err)
-	i16 := sqlBufToType(SYBINT2, data)
-	assert.Equal(t, i16, -32768)
-	//error
-	 _, err = typeToSqlBuf(SYBINT2, "pero")
-	 assert.NotNil(t, err)
+// Target variables for scanning into.
+var (
+	scanstr    string
+	scanbytes  []byte
+	scanraw    RawBytes
+	scanint    int
+	scanint8   int8
+	scanint16  int16
+	scanint32  int32
+	scanuint8  uint8
+	scanuint16 uint16
+	scanbool   bool
+	scanf32    float32
+	scanf64    float64
+	scantime   time.Time
+	scanptr    *int64
+	scaniface  interface{}
+)
+
+var conversionTests = []conversionTest{
+	// Exact conversions (destination pointer type matches source type)
+	{s: "foo", d: &scanstr, wantstr: "foo"},
+	{s: 123, d: &scanint, wantint: 123},
+	{s: someTime, d: &scantime, wanttime: someTime},
+
+	// To strings
+	{s: "string", d: &scanstr, wantstr: "string"},
+	{s: []byte("byteslice"), d: &scanstr, wantstr: "byteslice"},
+	{s: 123, d: &scanstr, wantstr: "123"},
+	{s: int8(123), d: &scanstr, wantstr: "123"},
+	{s: int64(123), d: &scanstr, wantstr: "123"},
+	{s: uint8(123), d: &scanstr, wantstr: "123"},
+	{s: uint16(123), d: &scanstr, wantstr: "123"},
+	{s: uint32(123), d: &scanstr, wantstr: "123"},
+	{s: uint64(123), d: &scanstr, wantstr: "123"},
+	{s: 1.5, d: &scanstr, wantstr: "1.5"},
+
+	// To []byte
+	{s: nil, d: &scanbytes, wantbytes: nil},
+	{s: "string", d: &scanbytes, wantbytes: []byte("string")},
+	{s: []byte("byteslice"), d: &scanbytes, wantbytes: []byte("byteslice")},
+	{s: 123, d: &scanbytes, wantbytes: []byte("123")},
+	{s: int8(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: int64(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: uint8(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: uint16(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: uint32(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: uint64(123), d: &scanbytes, wantbytes: []byte("123")},
+	{s: 1.5, d: &scanbytes, wantbytes: []byte("1.5")},
+
+	// To RawBytes
+	{s: nil, d: &scanraw, wantraw: nil},
+	{s: []byte("byteslice"), d: &scanraw, wantraw: RawBytes("byteslice")},
+	{s: 123, d: &scanraw, wantraw: RawBytes("123")},
+	{s: int8(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: int64(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: uint8(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: uint16(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: uint32(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: uint64(123), d: &scanraw, wantraw: RawBytes("123")},
+	{s: 1.5, d: &scanraw, wantraw: RawBytes("1.5")},
+
+	// Strings to integers
+	{s: "255", d: &scanuint8, wantuint: 255},
+	{s: "256", d: &scanuint8, wanterr: `converting string "256" to a uint8: strconv.ParseUint: parsing "256": value out of range`},
+	{s: "256", d: &scanuint16, wantuint: 256},
+	{s: "-1", d: &scanint, wantint: -1},
+	{s: "foo", d: &scanint, wanterr: `converting string "foo" to a int: strconv.ParseInt: parsing "foo": invalid syntax`},
+
+	// True bools
+	{s: true, d: &scanbool, wantbool: true},
+	{s: "True", d: &scanbool, wantbool: true},
+	{s: "TRUE", d: &scanbool, wantbool: true},
+	{s: "1", d: &scanbool, wantbool: true},
+	{s: 1, d: &scanbool, wantbool: true},
+	{s: int64(1), d: &scanbool, wantbool: true},
+	{s: uint16(1), d: &scanbool, wantbool: true},
+
+	// False bools
+	{s: false, d: &scanbool, wantbool: false},
+	{s: "false", d: &scanbool, wantbool: false},
+	{s: "FALSE", d: &scanbool, wantbool: false},
+	{s: "0", d: &scanbool, wantbool: false},
+	{s: 0, d: &scanbool, wantbool: false},
+	{s: int64(0), d: &scanbool, wantbool: false},
+	{s: uint16(0), d: &scanbool, wantbool: false},
+
+	// Not bools
+	{s: "yup", d: &scanbool, wanterr: `sql/driver: couldn't convert "yup" into type bool`},
+	{s: 2, d: &scanbool, wanterr: `sql/driver: couldn't convert 2 into type bool`},
+
+	// Floats
+	{s: float64(1.5), d: &scanf64, wantf64: float64(1.5)},
+	{s: int64(1), d: &scanf64, wantf64: float64(1)},
+	{s: float64(1.5), d: &scanf32, wantf32: float32(1.5)},
+	{s: "1.5", d: &scanf32, wantf32: float32(1.5)},
+	{s: "1.5", d: &scanf64, wantf64: float64(1.5)},
+
+	// Pointers
+	{s: interface{}(nil), d: &scanptr, wantnil: true},
+	{s: int64(42), d: &scanptr, wantptr: &answer},
+
+	// To interface{}
+	{s: float64(1.5), d: &scaniface, wantiface: float64(1.5)},
+	{s: int64(1), d: &scaniface, wantiface: int64(1)},
+	{s: "str", d: &scaniface, wantiface: "str"},
+	{s: []byte("byteslice"), d: &scaniface, wantiface: []byte("byteslice")},
+	{s: true, d: &scaniface, wantiface: true},
+	{s: nil, d: &scaniface},
+	{s: []byte(nil), d: &scaniface, wantiface: []byte(nil)},
 }
 
-func TestInt8(t *testing.T) {
-	testToSqlToType(t, SYBINT1, uint8(127))
-	testToSqlToType(t, SYBINT1, uint8(255))
-	data, err := typeToSqlBuf(SYBINT1, 127)
-	assert.Nil(t, err)
-	value, _ := sqlBufToType(SYBINT1, data).(uint8)
-	assert.Equal(t, int(value), 127)
+func intPtrValue(intptr interface{}) interface{} {
+	return reflect.Indirect(reflect.Indirect(reflect.ValueOf(intptr))).Int()
 }
 
-func TestInt64(t *testing.T) {
-	testToSqlToType(t, SYBINT8, int64(-9223372036854775808))
-	testToSqlToType(t, SYBINT8, int64(9223372036854775807))
+func intValue(intptr interface{}) int64 {
+	return reflect.Indirect(reflect.ValueOf(intptr)).Int()
 }
 
-func TestFloat(t *testing.T) {
-	testToSqlToType(t, SYBFLT8, float64(123.45))
-	testToSqlToType(t, SYBFLT8, float32(123.5))
-	testToSqlToType(t, SYBREAL, float32(123.45))
-	testToSqlToType(t, SYBREAL, float64(123.5))
+func uintValue(intptr interface{}) uint64 {
+	return reflect.Indirect(reflect.ValueOf(intptr)).Uint()
 }
 
-func TestBool(t *testing.T) {
-	testToSqlToType(t, SYBBIT, false)
-	testToSqlToType(t, SYBBIT, true)
+func float64Value(ptr interface{}) float64 {
+	return *(ptr.(*float64))
 }
 
-func TestMoney(t *testing.T) {
-	testToSqlToType(t, SYBMONEY4, float64(1223.45))
-	testToSqlToType(t, SYBMONEY, float64(1223.45))
-	testToSqlToType(t, SYBMONEY, float64(1234.56))
-	testToSqlToType(t, SYBMONEY, float64(1234.56))
+func float32Value(ptr interface{}) float32 {
+	return *(ptr.(*float32))
 }
 
-func TestTime(t *testing.T) {
-	value := time.Now()
-	typ := SYBDATETIME
-	data, err := typeToSqlBuf(typ, value)
-	assert.Nil(t, err)
-	value2 := sqlBufToType(typ, data)
-	value2t, _ := value2.(time.Time)
-	diff := value2t.Sub(value)
-	if diff > 3000000 && diff < -3000000 {
-		t.Error()
-		fmt.Printf("TestTime\n%s\n%s\ndiff: %d", value, value2t, diff)
+func timeValue(ptr interface{}) time.Time {
+	return *(ptr.(*time.Time))
+}
+
+func TestConversions(t *testing.T) {
+	for n, ct := range conversionTests {
+		err := convertAssign(ct.d, ct.s)
+		errstr := ""
+		if err != nil {
+			errstr = err.Error()
+		}
+		errf := func(format string, args ...interface{}) {
+			base := fmt.Sprintf("convertAssign #%d: for %v (%T) -> %T, ", n, ct.s, ct.s, ct.d)
+			t.Errorf(base+format, args...)
+		}
+		if errstr != ct.wanterr {
+			errf("got error %q, want error %q", errstr, ct.wanterr)
+		}
+		if ct.wantstr != "" && ct.wantstr != scanstr {
+			errf("want string %q, got %q", ct.wantstr, scanstr)
+		}
+		if ct.wantint != 0 && ct.wantint != intValue(ct.d) {
+			errf("want int %d, got %d", ct.wantint, intValue(ct.d))
+		}
+		if ct.wantuint != 0 && ct.wantuint != uintValue(ct.d) {
+			errf("want uint %d, got %d", ct.wantuint, uintValue(ct.d))
+		}
+		if ct.wantf32 != 0 && ct.wantf32 != float32Value(ct.d) {
+			errf("want float32 %v, got %v", ct.wantf32, float32Value(ct.d))
+		}
+		if ct.wantf64 != 0 && ct.wantf64 != float64Value(ct.d) {
+			errf("want float32 %v, got %v", ct.wantf64, float64Value(ct.d))
+		}
+		if bp, boolTest := ct.d.(*bool); boolTest && *bp != ct.wantbool && ct.wanterr == "" {
+			errf("want bool %v, got %v", ct.wantbool, *bp)
+		}
+		if !ct.wanttime.IsZero() && !ct.wanttime.Equal(timeValue(ct.d)) {
+			errf("want time %v, got %v", ct.wanttime, timeValue(ct.d))
+		}
+		if ct.wantnil && *ct.d.(**int64) != nil {
+			errf("want nil, got %v", intPtrValue(ct.d))
+		}
+		if ct.wantptr != nil {
+			if *ct.d.(**int64) == nil {
+				errf("want pointer to %v, got nil", *ct.wantptr)
+			} else if *ct.wantptr != intPtrValue(ct.d) {
+				errf("want pointer to %v, got %v", *ct.wantptr, intPtrValue(ct.d))
+			}
+		}
+		if ifptr, ok := ct.d.(*interface{}); ok {
+			if !reflect.DeepEqual(ct.wantiface, scaniface) {
+				errf("want interface %#v, got %#v", ct.wantiface, scaniface)
+				continue
+			}
+			if srcBytes, ok := ct.s.([]byte); ok {
+				dstBytes := (*ifptr).([]byte)
+				if len(srcBytes) > 0 && &dstBytes[0] == &srcBytes[0] {
+					errf("copy into interface{} didn't copy []byte data")
+				}
+			}
+		}
 	}
-}
-
-func TestTime4(t *testing.T) {
-	value := time.Date(2014, 1, 5, 23, 24, 0, 0, time.UTC)
-	testToSqlToType(t, SYBDATETIME4, value)
-}
-
-func TestBinary(t *testing.T) {
-	value := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	testToSqlToType(t, SYBVARBINARY, value)
-}
-
-func testToSqlToType(t *testing.T, typ int, value interface{}) {
-	data, err := typeToSqlBuf(typ, value)
-	assert.Nil(t, err)
-	value2 := sqlBufToType(typ, data)
-	assert.Equal(t, value, value2)
 }

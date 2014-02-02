@@ -1,225 +1,245 @@
+// This is code from http://golang.org/src/pkg/database/sql/convert.go
+
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package freetds
 
 import (
-	"bytes"
-	"encoding/binary"
+	"database/sql" 
+	"database/sql/driver"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
+	"reflect"
+	"strconv"
 )
 
-const (
-	//name               database type   go type
-	SYBINT1 = 48  //tinyint       uint8
-	SYBINT2 = 52  //smallint      int16
-	SYBINT4 = 56  //int           int32
-	SYBINT8 = 127 //bigint        int64
+var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
 
-	SYBCHAR      = 47
-	SYBVARCHAR   = 39  //varchar       string
-	SYBNVARCHAR  = 103 //nvarchar      string
-	XSYBNVARCHAR = 231 //nvarchar      string
-	XSYBNCHAR    = 239 //nchar         string
+// RawBytes is a byte slice that holds a reference to memory owned by
+// the database itself. After a Scan into a RawBytes, the slice is only
+// valid until the next call to Next, Scan, or Close.
+type RawBytes []byte
 
-	SYBREAL = 59 //real          float32
-	SYBFLT8 = 62 //float(53)     float64
-
-	SYBBIT  = 50  //bit           bool
-	SYBBITN = 104 //bit           bool
-
-	SYBMONEY4 = 122 //smallmoney    float64
-	SYBMONEY  = 60  //money         float64
-
-	SYBDATETIME  = 61 //datetime      time.Time
-	SYBDATETIME4 = 58 //smalldatetime time.Time
-
-	SYBIMAGE      = 34  //image         []byte
-	SYBBINARY     = 45  //binary        []byte
-	SYBVARBINARY  = 37  //varbinary     []byte
-	XSYBVARBINARY = 165 //varbinary     []byte
-)
-
-var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-
-func sqlBufToType(datatype int, data []byte) interface{} {
-	buf := bytes.NewBuffer(data)
-	switch datatype {
-	case SYBINT1:
-		var value uint8
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBINT2:
-		var value int16
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBINT4:
-		var value int32
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBINT8:
-		var value int64
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBDATETIME:
-		var days int32 /* number of days since 1/1/1900 */
-		var sec uint32 /* 300ths of a second since midnight */
-		binary.Read(buf, binary.LittleEndian, &days)
-		binary.Read(buf, binary.LittleEndian, &sec)
-		value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-		value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
-		return value
-	case SYBDATETIME4:
-		var days uint16 /* number of days since 1/1/1900 */
-		var mins uint16 /* number of minutes since midnight */
-		binary.Read(buf, binary.LittleEndian, &days)
-		binary.Read(buf, binary.LittleEndian, &mins)
-		value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-		value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(mins) * time.Minute)
-		return value
-	case SYBMONEY:
-		var high int32
-		var low uint32
-		binary.Read(buf, binary.LittleEndian, &high)
-		binary.Read(buf, binary.LittleEndian, &low)
-		return float64(int64(high)*4294967296+int64(low)) / 10000
-	case SYBMONEY4:
-		var value int32
-		binary.Read(buf, binary.LittleEndian, &value)
-		return float64(value) / 10000
-	case SYBREAL:
-		var value float32
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBFLT8:
-		var value float64
-		binary.Read(buf, binary.LittleEndian, &value)
-		return value
-	case SYBBIT, SYBBITN:
-		return data[0] == 1
-	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
-		return append([]byte{}, data[:len(data)-1]...) // make copy of data
-		//TODO - decimal & numeric datatypes
-	default: //string
-		len := strings.Index(string(data), "\x00")
-		if len == -1 {
-			return string(data)
+// convertAssign copies to dest the value in src, converting it if possible.
+// An error is returned if the copy would result in loss of information.
+// dest should be a pointer type.
+func convertAssign(dest, src interface{}) error {
+	// Common cases, without reflect.
+	switch s := src.(type) {
+	case string:
+		switch d := dest.(type) {
+		case *string:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = s
+			return nil
+		case *[]byte:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = []byte(s)
+			return nil
 		}
-		return string(data[:len])
+	case []byte:
+		switch d := dest.(type) {
+		case *string:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = string(s)
+			return nil
+		case *interface{}:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = cloneBytes(s)
+			return nil
+		case *[]byte:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = cloneBytes(s)
+			return nil
+		case *RawBytes:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = s
+			return nil
+		}
+	case nil:
+		switch d := dest.(type) {
+		case *interface{}:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = nil
+			return nil
+		case *[]byte:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = nil
+			return nil
+		case *RawBytes:
+			if d == nil {
+				return errNilPtr
+			}
+			*d = nil
+			return nil
+		}
+	}
+
+	var sv reflect.Value
+
+	switch d := dest.(type) {
+	case *string:
+		sv = reflect.ValueOf(src)
+		switch sv.Kind() {
+			case reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
+			*d = fmt.Sprintf("%v", src)
+			return nil
+		}
+	case *[]byte:
+		sv = reflect.ValueOf(src)
+		switch sv.Kind() {
+			case reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
+			*d = []byte(fmt.Sprintf("%v", src))
+			return nil
+		}
+	case *RawBytes:
+		sv = reflect.ValueOf(src)
+		switch sv.Kind() {
+			case reflect.Bool,
+			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
+			*d = RawBytes(fmt.Sprintf("%v", src))
+			return nil
+		}
+	case *bool:
+		bv, err := driver.Bool.ConvertValue(src)
+		if err == nil {
+			*d = bv.(bool)
+		}
+		return err
+	case *interface{}:
+		*d = src
+		return nil
+	}
+
+	if scanner, ok := dest.(sql.Scanner); ok {
+		return scanner.Scan(src)
+	}
+
+	dpv := reflect.ValueOf(dest)
+	if dpv.Kind() != reflect.Ptr {
+		return errors.New("destination not a pointer")
+	}
+	if dpv.IsNil() {
+		return errNilPtr
+	}
+
+	if !sv.IsValid() {
+		sv = reflect.ValueOf(src)
+	}
+
+	//if types are the same
+	dv := reflect.Indirect(dpv)
+	if dv.Kind() == sv.Kind() {
+		dv.Set(sv)
+		return nil
+	}
+
+	//My addition.
+	//This is added to the original implementation from go source
+	//Intention is to skip string conversion for most common cases.
+	//Types are almost the same e.g. int -> int32
+	switch dv.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		switch sv.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			dv.SetInt(sv.Int())
+			return nil
+		}
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		switch sv.Kind() {
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			dv.SetUint(sv.Uint())
+			return nil
+		}
+	case reflect.Float32, reflect.Float64:
+		switch sv.Kind() {
+		case reflect.Float32, reflect.Float64:
+			dv.SetFloat(sv.Float())
+			return nil
+		}
+	}
+
+	//convert to string than back
+	switch dv.Kind() {
+	case reflect.Ptr:
+		if src == nil {
+			dv.Set(reflect.Zero(dv.Type()))
+			return nil
+		} else {
+			dv.Set(reflect.New(dv.Type().Elem()))
+			return convertAssign(dv.Interface(), src)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		s := asString(src)
+		i64, err := strconv.ParseInt(s, 10, dv.Type().Bits())
+		if err != nil {
+			return fmt.Errorf("converting string %q to a %s: %v", s, dv.Kind(), err)
+		}
+		dv.SetInt(i64)
+		return nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		s := asString(src)
+		u64, err := strconv.ParseUint(s, 10, dv.Type().Bits())
+		if err != nil {
+			return fmt.Errorf("converting string %q to a %s: %v", s, dv.Kind(), err)
+		}
+		dv.SetUint(u64)
+		return nil
+	case reflect.Float32, reflect.Float64:
+		s := asString(src)
+		f64, err := strconv.ParseFloat(s, dv.Type().Bits())
+		if err != nil {
+			return fmt.Errorf("converting string %q to a %s: %v", s, dv.Kind(), err)
+		}
+		dv.SetFloat(f64)
+		return nil
+	}
+
+	return fmt.Errorf("unsupported driver -> Scan pair: %T -> %T", src, dest)
+}
+
+func cloneBytes(b []byte) []byte {
+	if b == nil {
+		return nil
+	} else {
+		c := make([]byte, len(b))
+		copy(c, b)
+		return c
 	}
 }
 
-func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
-	buf := new(bytes.Buffer)
-	switch datatype {
-	case SYBINT1:
-		var ui8 uint8
-		if err = convertAssign(&ui8, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, ui8)
-		}
-	case SYBINT2:
-		var i16 int16
-		if err = convertAssign(&i16, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, i16)
-		}
-	case SYBINT4:
-		var i32 int32
-		if err = convertAssign(&i32, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, i32)
-		}
-	case SYBINT8:
-		var i64 int64
-		if err = convertAssign(&i64, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, i64)
-		}
-	case SYBREAL:
-		var f32 float32
-		if err = convertAssign(&f32, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, f32)
-		}
-	case SYBFLT8:
-		var f64 float64
-		if err = convertAssign(&f64, value); err == nil {
-			err = binary.Write(buf, binary.LittleEndian, f64)
-		}
-	case SYBBIT, SYBBITN:
-		if typedValue, ok := value.(bool); ok {
-			if typedValue {
-				data = []byte{1}
-			} else {
-				data = []byte{0}
-			}
-			return
-		} else {
-			err = errors.New(fmt.Sprintf("Could not convert %T to bool.", value))
-		}
-	case SYBMONEY4:
-		var f64 float64
-		if err = convertAssign(&f64, value); err == nil {
-			i32 := int32(f64 * 10000)
-			err = binary.Write(buf, binary.LittleEndian, i32)
-		}
-	case SYBMONEY:
-		var f64 float64
-		if err = convertAssign(&f64, value); err == nil {
-			intValue := int64(f64 * 10000)
-			high := int32(intValue >> 32)
-			low := uint32(intValue - int64(high))
-			err = binary.Write(buf, binary.LittleEndian, high)
-			if err == nil {
-				err = binary.Write(buf, binary.LittleEndian, low)
-			}
-		}
-	case SYBDATETIME:
-		if tm, ok := value.(time.Time); ok {
-			tm = tm.UTC()
-			days := int32(tm.Sub(sqlStartTime).Hours() / 24)
-			secs := uint32((((tm.Hour()*60+tm.Minute())*60)+tm.Second())*300 +
-				tm.Nanosecond()/3333333)
-			err = binary.Write(buf, binary.LittleEndian, days)
-			if err == nil {
-				err = binary.Write(buf, binary.LittleEndian, secs)
-			}
-		} else {
-			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
-		}
-	case SYBDATETIME4:
-		if tm, ok := value.(time.Time); ok {
-			tm = tm.UTC()
-			days := uint16(tm.Sub(sqlStartTime).Hours() / 24)
-			mins := uint16(tm.Hour()*60 + tm.Minute())
-			err = binary.Write(buf, binary.LittleEndian, days)
-			if err == nil {
-				err = binary.Write(buf, binary.LittleEndian, mins)
-			}
-		} else {
-			err = errors.New(fmt.Sprintf("Could not convert %T to time.Time.", value))
-		}
-	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
-		if buf, ok := value.([]byte); ok {
-			data = append(buf, []byte{0}[0])
-			return
-		} else {
-			err = errors.New(fmt.Sprintf("Could not convert %T to []byte.", value))
-		}
-	default:
-		if str, ok := value.(string); ok {
-			data = []byte(str)
-			if datatype == XSYBNVARCHAR ||
-				datatype == XSYBNCHAR {
-				//FIXME - adding len bytes to the end of the buf
-				//        realy don't understand why this is necessary
-				//        come to this solution by try and error
-				l := len(data)
-				for i := 0; i < l; i++ {
-					data = append(data, byte(0))
-				}
-			}
-			return
-		} else {
-			err = errors.New(fmt.Sprintf("Could not convert %T to string.", value))
-		}
+func asString(src interface{}) string {
+	switch v := src.(type) {
+	case string:
+		return v
+	case []byte:
+		return string(v)
 	}
-	data = buf.Bytes()
-	return
+	return fmt.Sprintf("%v", src)
 }
