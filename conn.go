@@ -210,19 +210,13 @@ func (conn *Conn) clearMessages() {
 
 //Execute sql query.
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
-	if conn.isMirrorMessage() {
-		err := conn.reconnect()
-		if err != nil {
-			return nil, err
-		}
-	}
 	results, err := conn.exec(sql)
-	if err != nil && conn.isDead() {
-		err = conn.reconnect()
-		if err != nil {
+	if err != nil && (conn.isDead() || conn.isMirrorSlave()) {
+		if err := conn.reconnect(); err != nil {
 			return nil, err
 		}
 		results, err = conn.exec(sql)
+
 	}
 	return results, err
 }
@@ -242,13 +236,23 @@ func (conn *Conn) mirrorDefined() bool {
 	return len(conn.mirrorHost) > 0
 }
 
+func (conn *Conn) isMirrorSlave() bool {
+	if conn.isMirrorMessage() {
+		return true
+	}
+	if defined, active, isMaster, err := conn.MirrorStatus(); err == nil {
+		return defined && active && !isMaster 
+	}
+	return false
+}
+
 func (conn *Conn) isMirrorMessage() bool {
 	return strings.Contains(conn.Message, "It is acting as a mirror database") ||
-		strings.Contains(conn.Message, "It is in the middle of a restore")
+		strings.Contains(conn.Message, "It is in the middle of a restore") 
 }
 
 func (conn *Conn) switchMirror() {
-	if len(conn.mirrorHost) == 0 {
+	if !conn.mirrorDefined() {
 		return
 	}
 	tmp := conn.host
@@ -319,4 +323,32 @@ func (conn *Conn) SelectValue(sql string) (interface{}, error) {
 		return nil, errors.New("No rows in result.")
 	}
 	return results[0].Rows[0][0], nil
+}
+
+//Checking database mirroring status:
+//  isDefined - is mirror defined (mirror parametar passed in connection string)
+//  isActive  - is mirroring active for this database
+//  isMaster  - is the current host master for this database
+//Returns error if could not execute query to get current mirroring status.
+func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
+	if !conn.mirrorDefined() {
+		return false, false, false, nil
+	}
+	rst, err := conn.exec(fmt.Sprintf(`
+    SELECT
+    	case when mirroring_guid is not null then 1 else 0 end mirroring_active,
+    	case when mirroring_role = 2 then 0 else 1 end is_master, 
+    	mirroring_state, mirroring_state_desc, mirroring_role, mirroring_role_desc,
+      database_id, 
+    	DB_NAME(database_id) database_name     	
+    FROM sys.database_mirroring
+    WHERE DB_NAME(database_id)='%s' 
+  `, conn.database))
+	if err != nil {
+		return true, false, false, err
+	}
+	var active, isMaster bool
+	rst[0].Next()
+	err = rst[0].Scan(&active, &isMaster)
+	return true, active, isMaster, err
 }

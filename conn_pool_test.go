@@ -122,3 +122,36 @@ func BenchmarkConnPool(b *testing.B) {
 		<-done
 	}
 }
+
+func TestMirroringConnPool(t *testing.T) {
+	if !IsMirrorHostDefined() {
+		t.Skip("mirror host is not defined")
+	}
+	p, err := NewConnPool(testDbConnStr(), 2)
+	defer p.Close()
+	assert.Nil(t, err)
+	c1, err := p.Get()
+	assert.Nil(t, err)
+	rst, err := c1.Exec("select * from authors")
+	assert.Nil(t, err)
+	assert.Equal(t, 23, len(rst[0].Rows))
+	failover(c1)
+	//newly created connection
+	c2, err := p.Get()
+	assert.Nil(t, err)
+	rst, err = c2.Exec("select * from authors")
+	assert.Nil(t, err)
+	assert.Equal(t, 23, len(rst[0].Rows))
+
+	//reuse c1 connection
+	c1.Close()
+	c3, err := p.Get()
+	assert.Nil(t, err)
+	//c3.DbUse()
+	rst, err = c3.Exec("select * from authors")
+	assert.Nil(t, err)
+	assert.Equal(t, 23, len(rst[0].Rows))
+
+	c2.Close()
+	c3.Close()
+}

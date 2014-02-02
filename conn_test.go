@@ -256,8 +256,7 @@ func TestDbUse(t *testing.T) {
 
 func TestMirroring(t *testing.T) {
 	if !IsMirrorHostDefined() {
-		fmt.Printf("skipping TestMirroring\n")
-		return
+		t.Skip("mirror host is not defined")
 	}
 	conn := ConnectToTestDb(t)
 	if conn == nil {
@@ -282,6 +281,7 @@ func TestMirroring(t *testing.T) {
 
 func failover(conn *Conn) error {
 	_, err := conn.Exec("use master; ALTER DATABASE pubs SET PARTNER FAILOVER")
+	time.Sleep(1e9)
 	return err
 }
 
