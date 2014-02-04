@@ -360,8 +360,6 @@ func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
 	assert.Nil(t, err)
 }
 
-
-
 //usefull for testing n
 func printResults(results []*Result) {
 	fmt.Printf("results %v", results)

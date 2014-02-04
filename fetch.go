@@ -33,7 +33,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			name := C.GoString(C.dbcolname(conn.dbproc, no))
 			size := C.dbcollen(conn.dbproc, no)
 			typ := C.dbcoltype(conn.dbproc, no)
-			bindTyp := dbbindtype(typ)
+			bindTyp, typ := dbbindtype(typ)
 			result.addColumn(name, int(size), int(typ))
 			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
@@ -98,39 +98,39 @@ func (col *column) Value() interface{} {
 	return sqlBufToType(col.typ, col.buffer)
 }
 
-func dbbindtype(datatype C.int) C.int {
+func dbbindtype(datatype C.int) (C.int, C.int) {
 	switch datatype {
+		//this will map decimal, and numeric datatypes to float
+	case C.SYBDECIMAL, C.SYBNUMERIC:
+		return C.FLT8BIND,C.SYBFLT8
+		//for all other types return datatype as second param
 	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
-		return C.BINARYBIND
+		return C.BINARYBIND, datatype
 	case C.SYBBIT:
-		return C.BITBIND
+		return C.BITBIND, datatype
 	case C.SYBTEXT, C.SYBVARCHAR, C.SYBCHAR:
-		return C.NTBSTRINGBIND
+		return C.NTBSTRINGBIND, datatype
 	case C.SYBDATETIME:
-		return C.DATETIMEBIND
+		return C.DATETIMEBIND, datatype
 	case C.SYBDATETIME4:
-		return C.SMALLDATETIMEBIND
-	case C.SYBDECIMAL:
-		return C.DECIMALBIND
-	case C.SYBNUMERIC:
-		return C.NUMERICBIND
+		return C.SMALLDATETIMEBIND, datatype
 	case C.SYBFLT8:
-		return C.FLT8BIND
+		return C.FLT8BIND, datatype
 	case C.SYBREAL:
-		return C.REALBIND
+		return C.REALBIND, datatype
 	case C.SYBINT1:
-		return C.TINYBIND
+		return C.TINYBIND, datatype
 	case C.SYBINT2:
-		return C.SMALLBIND
+		return C.SMALLBIND, datatype
 	case C.SYBINT4:
-		return C.INTBIND
+		return C.INTBIND, datatype
 	case C.SYBINT8:
-		return C.BIGINTBIND
+		return C.BIGINTBIND, datatype
 	case C.SYBMONEY:
-		return C.MONEYBIND
+		return C.MONEYBIND, datatype
 	case C.SYBMONEY4:
-		return C.SMALLMONEYBIND
+		return C.SMALLMONEYBIND, datatype
 	}
 	//TODO - log unknown datatype
-	return C.NTBSTRINGBIND
+	return C.NTBSTRINGBIND, datatype
 }

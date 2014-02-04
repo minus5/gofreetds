@@ -38,6 +38,9 @@ const (
 	SYBBINARY     = 45  //binary        []byte
 	SYBVARBINARY  = 37  //varbinary     []byte
 	XSYBVARBINARY = 165 //varbinary     []byte
+
+	SYBNUMERIC    = 108
+	SYBDECIMAL    = 106
 )
 
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -99,7 +102,7 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 		return data[0] == 1
 	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
 		return append([]byte{}, data[:len(data)-1]...) // make copy of data
-		//TODO - decimal & numeric datatypes
+		
 	default: //string
 		len := strings.Index(string(data), "\x00")
 		if len == -1 {
