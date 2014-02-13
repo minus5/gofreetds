@@ -156,7 +156,7 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
     select 1.25 f1, cast(1.26 as decimal(10,5)) f2, cast(1.27 as numeric(10,5)) f3
     return 0`)
 	assert.Nil(t, err)
-		rst, err := conn.ExecSp("test_sp_result")
+	rst, err := conn.ExecSp("test_sp_result")
 	assert.Nil(t, err)
 	assert.Equal(t, 0, rst.Status)
 	assert.Equal(t, 1, len(rst.Results))
@@ -167,4 +167,16 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	assert.Equal(t, 1.25, f1)
 	assert.Equal(t, 1.26, f2)
 	assert.Equal(t, 1.27, f3)
+}
+
+
+func TestBugFixEmptyStringInSpParms(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_bug_fix_1", `@p1 varchar(255) as
+    select @p1
+    return 0`)
+	assert.Nil(t, err)
+	rst, err := conn.ExecSp("test_sp_bug_fix_1", "")
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
 }
