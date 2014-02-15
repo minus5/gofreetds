@@ -175,7 +175,6 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 	case SYBDATETIME:
 		if tm, ok := value.(time.Time); ok {
-			tm = tm.UTC()
 			days := int32(tm.Sub(sqlStartTime).Hours() / 24)
 			secs := uint32((((tm.Hour()*60+tm.Minute())*60)+tm.Second())*300 +
 				tm.Nanosecond()/3333333)
@@ -188,7 +187,6 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 	case SYBDATETIME4:
 		if tm, ok := value.(time.Time); ok {
-			tm = tm.UTC()
 			days := uint16(tm.Sub(sqlStartTime).Hours() / 24)
 			mins := uint16(tm.Hour()*60 + tm.Minute())
 			err = binary.Write(buf, binary.LittleEndian, days)
