@@ -137,12 +137,13 @@ func TestReading(t *testing.T) {
 	}
 	defer conn.Close()
 
-	results, err := conn.Exec("select * from freetds_types")
+	//text i ntext columns is not readed properly
+	results, err := conn.Exec(`select * from freetds_types`)
+	printResults(results)
 	if err != nil || len(results) != 1 {
 		fmt.Printf("error: %s\n%s\n%s", err, conn.Message, conn.Error)
 		return
 	}
-	//PrintResults(results)
 }
 
 func TestRetryOnKilledConnection(t *testing.T) {

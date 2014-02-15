@@ -59,7 +59,7 @@ type SpOutputParam struct {
 func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
 	conn.clearMessages()
 	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
-		return nil, errors.New("dbrpcinit failed")
+		return nil, conn.raiseError("dbrpcinit failed")
 	}
 	//input params
 	spParams, err := conn.getSpParams(spName)
@@ -67,25 +67,33 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		return nil, err
 	}
 	for i, spParam := range spParams {
+		//get datavalue for the suplied stored procedure parametar
+		var datavalue *C.BYTE 
 		datalen := C.DBINT(0)
-		datavalue := (*C.BYTE)(unsafe.Pointer(&([]byte{0})[0]))
-		maxOutputSize := C.DBINT(0)
-		status := C.BYTE(0)
-		if spParam.IsOutput {
-			status = C.DBRPCRETURN
-			maxOutputSize = C.DBINT(spParam.MaxLength)
-		}
 		if i < len(params) {
 			param := params[i]
 			if param != nil {
-				datalen, datavalue, err = toRpcParam(int(spParam.UserTypeId), param)
+				data, err := typeToSqlBuf(int(spParam.UserTypeId), param)
 				if err != nil {
 					return nil, err
 				}
+				if len(data) > 0 {
+					datalen = C.DBINT(len(data))
+					datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
+				}
 			}
-		}
+		} 
+		//set parametar valus, call dbrpcparam
 		if i < len(params) || spParam.IsOutput {
-			if C.dbrpcparam(conn.dbproc, C.CString(spParam.Name), status,
+			maxOutputSize := C.DBINT(0)
+			status := C.BYTE(0)
+			if spParam.IsOutput {
+				status = C.DBRPCRETURN
+				maxOutputSize = C.DBINT(spParam.MaxLength)
+			}
+			paramname := C.CString(spParam.Name)
+			defer C.free(unsafe.Pointer(paramname))
+			if C.dbrpcparam(conn.dbproc, paramname, status,
 				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
 				return nil, errors.New("dbrpcparam failed")
 			}
@@ -93,28 +101,19 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	}
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
-		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
-		} else {
-			return nil, errors.New("dbrpcsend failed")
-		}
+		return nil, conn.raiseError("dbrpcsend failed")
 	}
 	//results
 	result := &SpResult{Status: -1}
 	result.Results, err = conn.fetchResults()
 	if err != nil {
-
-		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
-		} else {
-			return nil, err
-		}
+		return nil, conn.raise(err)
 	}
 	//return status
 	if C.dbhasretstat(conn.dbproc) == C.TRUE {
 		result.Status = int(C.dbretstatus(conn.dbproc))
 	}
-	//output params
+	//read output params
 	numOutParams := int(C.dbnumrets(conn.dbproc))
 	result.OutputParams = make([]*SpOutputParam, numOutParams)
 	for i := 1; i <= numOutParams; i++ {
@@ -131,18 +130,30 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	return result, nil
 }
 
-func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
-	data, err := typeToSqlBuf(datatype, value)
-	if err != nil {
-		return
+func (conn *Conn) raise(err error) error {
+	if len(conn.Error) != 0 {
+		return errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
+	} else {
+		return errors.New("dbsqlok failed")
 	}
-	if len(data) > 0 {
-		datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
-	}
-	datalen = C.DBINT(len(data))
-	//fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
-	return
 }
+
+func (conn *Conn) raiseError(errMsg string) error {
+	return conn.raise(errors.New(errMsg))
+}
+
+// func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
+// 	data, err := typeToSqlBuf(datatype, value)
+// 	if err != nil {
+// 		return
+// 	}
+// 	datalen = C.DBINT(len(data))
+// 	if len(data) > 0 {
+// 		datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
+// 	}
+// 	//fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
+// 	return
+// }
 
 //Stored procedure parameter definition
 type spParam struct {

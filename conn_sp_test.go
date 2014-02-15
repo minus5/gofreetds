@@ -180,3 +180,53 @@ func TestBugFixEmptyStringInSpParms(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
 }
+
+//ova petlja je ponekad pucala sa:
+// SIGSEGV: segmentation violation
+// signal arrived during cgo execution
+//nisam uspio dotjearti zasto je to
+//kada bi stavio onaj select vise ne bi pucalo
+//kada bi stavio GC takodjer ne
+//a i kada puca to je stohasticki
+/*
+func TestBugFixSegmentationFault(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 int, 
+     @p2 varchar(255),
+     @p3 varchar(255),
+     @p4 varchar(255),
+     @p5 money as
+        --select @p2
+        return 1`)
+	assert.Nil(t, err)
+	s := "1"
+	s2 := "1d"
+	s3 := "description"
+	i := 123
+	f := 12.34
+	for {
+		rst, err := conn.ExecSp("test_sp_bug_fix_2", i, s, s2, s3, f)
+		assert.Nil(t, err)
+		assert.NotNil(t, rst)
+		if err != nil {
+			break
+		}
+		//iz nepoznatog razloga ovo je znalo pomoci
+		//runtime.GC()
+	}
+}
+*/
+
+func TestStoredProcedureNotExists(t *testing.T) { 
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_not_exists", `as return`)
+	assert.Nil(t, err)
+	rst, err := conn.ExecSp("test_sp_not_exists")
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	_, err = conn.Exec("drop procedure test_sp_not_exists")
+	assert.Nil(t, err)
+	rst, err = conn.ExecSp("test_sp_not_exists")
+	assert.NotNil(t, err)
+	assert.Nil(t, rst)
+}
