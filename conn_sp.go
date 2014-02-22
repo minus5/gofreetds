@@ -134,7 +134,7 @@ func (conn *Conn) raise(err error) error {
 	if len(conn.Error) != 0 {
 		return errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
 	} else {
-		return errors.New("dbsqlok failed")
+		return err
 	}
 }
 

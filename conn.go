@@ -259,14 +259,10 @@ func (conn *Conn) switchMirror() {
 func (conn *Conn) exec(sql string) ([]*Result, error) {
 	conn.clearMessages()
 	if C.dbcmd(conn.dbproc, C.CString(sql)) == C.FAIL {
-		return nil, errors.New("dbcmd failed")
+		return nil, conn.raiseError("dbcmd failed")
 	}
 	if C.dbsqlexec(conn.dbproc) == C.FAIL {
-		if len(conn.Error) != 0 {
-			return nil, errors.New(fmt.Sprintf("%s%s", conn.Error, conn.Message))
-		} else {
-			return nil, errors.New("dbsqlexec failed")
-		}
+		return nil, conn.raiseError("dbsqlexec failed")
 	}
 	return conn.fetchResults()
 }
@@ -313,7 +309,7 @@ func (conn *Conn) Rollback() error {
 func (conn *Conn) SelectValue(sql string) (interface{}, error) {
 	results, err := conn.Exec(sql)
 	if err != nil || results == nil {
-		return nil, errors.New(conn.Error + conn.Message)
+		return nil, conn.raise(err)
 	}
 	if len(results[0].Rows) == 0 {
 		return nil, errors.New("No rows in result.")

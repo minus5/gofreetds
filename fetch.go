@@ -77,7 +77,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 		conn.currentResult = nil
 	}
 	if len(conn.Error) > 0 {
-		return results, errors.New(conn.Error)
+		return results, conn.raise(nil)
 	}
 	return results, nil
 }
