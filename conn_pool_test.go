@@ -155,3 +155,16 @@ func TestMirroringConnPool(t *testing.T) {
 	c2.Close()
 	c3.Close()
 }
+
+func TestConnPoolDo(t *testing.T) {
+	p, _ := NewConnPool(testDbConnStr(2))
+	defer p.Close()
+	err := p.Do(func(conn *Conn) error {
+		assert.Equal(t, 0, len(p.pool))
+		assert.Equal(t, 1, p.connCount)
+		return nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(p.pool))
+	assert.Equal(t, 1, p.connCount)
+}

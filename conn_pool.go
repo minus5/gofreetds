@@ -91,6 +91,34 @@ func (p *ConnPool) Get() (*Conn, error) {
 	return p.newConn()
 }
 
+//Get connection from pool and execute handler.
+//Release connection after handler is called.
+func (p *ConnPool) Do(handler func(*Conn) error) error {
+	conn, err := p.Get()
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	return handler(conn)
+}
+
+//Get new connection from pool, and execute handler in transaction.
+//If handler returns error transaction will be rolled back. 
+//Release connection after handerl is called. 
+func (p *ConnPool) DoInTransaction(handler func(*Conn) error) error {
+	return p.Do(func(conn *Conn) error {
+		conn.Begin()
+		err := handler(conn)
+		if err != nil {
+			conn.Rollback()
+		} else {
+			conn.Commit()
+		}
+		return err
+	})
+}
+
+
 func (p *ConnPool) getPooled() *Conn {
 	p.poolMutex.Lock()
 	defer p.poolMutex.Unlock()
