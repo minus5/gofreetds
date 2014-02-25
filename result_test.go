@@ -24,7 +24,7 @@ func testResult() *Result {
 	r.addColumn("float32", 0, 0)
 	r.addColumn("float64", 0, 0)
 	for i := 0; i < 3; i++ {
-		r.addValue(i, 0, int32(1))
+		r.addValue(i, 0, int32(i+1))
 		r.addValue(i, 1, "two")
 		r.addValue(i, 2, now)
 		r.addValue(i, 3, float64(123.45))

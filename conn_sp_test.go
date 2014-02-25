@@ -12,7 +12,7 @@ func TestExecSp(t *testing.T) {
 	rst, err := conn.ExecSp("sp_who")
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
-	assert.Equal(t, 1, len(rst.Results))
+	assert.Equal(t, 1, len(rst.results))
 }
 
 func TestExecSpReturnValue(t *testing.T) {
@@ -22,7 +22,7 @@ func TestExecSpReturnValue(t *testing.T) {
 	rst, err := conn.ExecSp("test_return_value")
 	assert.Nil(t, err)
 	assert.False(t, rst.HasResults())
-	assert.Equal(t, 123, rst.Status)
+	assert.Equal(t, 123, rst.Status())
 }
 
 func TestExecSpResults(t *testing.T) {
@@ -31,8 +31,8 @@ func TestExecSpResults(t *testing.T) {
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_results")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(rst.Results))
-	assert.Equal(t, 456, rst.Status)
+	assert.Equal(t, 2, len(rst.results))
+	assert.Equal(t, 456, rst.Status())
 }
 
 func TestExecSpInputParams(t *testing.T) {
@@ -42,7 +42,7 @@ func TestExecSpInputParams(t *testing.T) {
 	rst, err := conn.ExecSp("test_input_params", 123, 234, "pero", time.Now(), []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0})
 	assert.Nil(t, err)
 	assert.False(t, rst.HasResults())
-	assert.Equal(t, 357, rst.Status)
+	assert.Equal(t, 357, rst.Status())
 }
 
 func TestExecSpInputParamsTypes(t *testing.T) {
@@ -55,9 +55,9 @@ func TestExecSpInputParamsTypes(t *testing.T) {
 	//all input types are int, but they are converted to apropriate sql types
 	rst, err := conn.ExecSp("test_input_params3", 1, 2 ,3, 4, 5, 6)
 	assert.Nil(t, err)
-	assert.Equal(t, 1, rst.Status)
+	assert.Equal(t, 1, rst.Status())
 	var p1, p2, p3, p4, p5, p6 int
-	result := rst.Results[0]
+	result := rst.results[0]
 	result.Next()
 	//returned as various types, and then converted to int
 	result.Scan(&p1, &p2, &p3, &p4, &p5, &p6)
@@ -87,7 +87,7 @@ func TestExecSpInputParams2(t *testing.T) {
 	assert.True(t, rst.HasResults())
 	var got, gotp2, gotp3, gotp4 string
 	var gotp5 []byte
-	result := rst.Results[0]
+	result := rst.results[0]
 	result.Next()
 	result.Scan(&got, &gotp2, &gotp3, &gotp4, &gotp5)
 	assert.Equal(t, want, got)
@@ -105,13 +105,13 @@ func TestExecSpOutputParams(t *testing.T) {
 	rst, err := conn.ExecSp("test_output_params", 123)
 	assert.Nil(t, err)
 	assert.False(t, rst.HasResults())
-	assert.Equal(t, 0, rst.Status)
+	assert.Equal(t, 0, rst.Status())
 	assert.True(t, rst.HasOutputParams())
-	assert.Equal(t, len(rst.OutputParams), 1)
-	assert.Equal(t, rst.OutputParams[0].Name, "@p1")
-	assert.Equal(t, rst.OutputParams[0].Value, 124)
+	assert.Equal(t, len(rst.outputParams), 1)
+	assert.Equal(t, rst.outputParams[0].Name, "@p1")
+	assert.Equal(t, rst.outputParams[0].Value, 124)
 	var p1 int32
-	err = rst.Scan(&p1)
+	err = rst.ParamScan(&p1)
 	assert.Nil(t, err)
 	assert.Equal(t, p1, 124)
 }
@@ -158,9 +158,9 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_sp_result")
 	assert.Nil(t, err)
-	assert.Equal(t, 0, rst.Status)
-	assert.Equal(t, 1, len(rst.Results))
-	result := rst.Results[0]
+	assert.Equal(t, 0, rst.Status())
+	assert.Equal(t, 1, len(rst.results))
+	result := rst.results[0]
 	result.Next()
 	var f1, f2, f3 float64
 	result.Scan(&f1, &f2, &f3)

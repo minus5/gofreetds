@@ -21,37 +21,6 @@ import (
 */
 import "C"
 
-//Stored procedure execution result.
-type SpResult struct {
-	Results      []*Result
-	Status       int
-	OutputParams []*SpOutputParam
-}
-
-//Does the stored procedure returned any resultsets.
-func (r *SpResult) HasResults() bool {
-	return len(r.Results) > 0
-}
-
-//Does the stored procedure has any output params.
-func (r *SpResult) HasOutputParams() bool {
-	return len(r.OutputParams) > 0
-}
-
-func (r *SpResult) Scan(values ...interface{}) error {
-	outputValues := make([]interface{}, len(r.OutputParams))
-	for i := 0; i < len(r.OutputParams); i++ {
-		outputValues[i] = r.OutputParams[i].Value
-	}
-	return assignValues(outputValues, values)
-}
-
-//Stored procedure output parameter name and value.
-type SpOutputParam struct {
-	Name  string
-	Value interface{}
-}
-
 //Execute stored procedure by name and list of params.
 //
 //Example:
@@ -98,24 +67,24 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 				return nil, errors.New("dbrpcparam failed")
 			}
 		}
-	}
+	} 
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
 		return nil, conn.raiseError("dbrpcsend failed")
 	}
 	//results
-	result := &SpResult{Status: -1}
-	result.Results, err = conn.fetchResults()
+	result := NewSpResult()
+	result.results, err = conn.fetchResults()
 	if err != nil {
 		return nil, conn.raise(err)
 	}
 	//return status
 	if C.dbhasretstat(conn.dbproc) == C.TRUE {
-		result.Status = int(C.dbretstatus(conn.dbproc))
+		result.status = int(C.dbretstatus(conn.dbproc))
 	}
 	//read output params
 	numOutParams := int(C.dbnumrets(conn.dbproc))
-	result.OutputParams = make([]*SpOutputParam, numOutParams)
+	result.outputParams = make([]*SpOutputParam, numOutParams)
 	for i := 1; i <= numOutParams; i++ {
 		j := C.int(i)
 		len := C.dbretlen(conn.dbproc, j)
@@ -124,7 +93,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		data := C.GoBytes(unsafe.Pointer(C.dbretdata(conn.dbproc, j)), len)
 		value := sqlBufToType(typ, data)
 		param := &SpOutputParam{Name: name, Value: value}
-		result.OutputParams[i-1] = param
+		result.outputParams[i-1] = param
 	}
 
 	return result, nil
