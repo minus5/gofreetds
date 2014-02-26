@@ -23,8 +23,9 @@ func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
 	}
 	err += fmt.Sprintf("\n%s\n\n", C.GoString(dberrstr))
 
-	if connections[int64(dbprocAddr)] != nil {
-		connections[int64(dbprocAddr)].Error = err
+	conn := connections[int64(dbprocAddr)]
+	if conn != nil {
+		conn.addError(err)
 	}
 	//fmt.Printf("err: %s", err)
 	return C.INT_CANCEL
@@ -58,8 +59,9 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 	}
 	msg += fmt.Sprintf("%s\n", C.GoString(msgtext))
 
-	if connections[int64(dbprocAddr)] != nil {
-		connections[int64(dbprocAddr)].Message = msg
+	conn := connections[int64(dbprocAddr)]
+	if conn != nil {
+		conn.addMessage(msg)
 	}
 
 	//fmt.Printf("msg: %s", msg)

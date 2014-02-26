@@ -49,6 +49,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 				if len(data) > 0 {
 					datalen = C.DBINT(len(data))
 					datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
+					//fmt.Printf("dbrpcparam %s: [%v] '%s'\n", spParam.Name, data, data)
 				}
 			}
 		} 

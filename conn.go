@@ -128,8 +128,11 @@ func (conn *Conn) connect() (*Conn, error) {
 	conn.dbproc = dbproc
 	conn.addr = int64(C.dbproc_addr(dbproc))
 	connections[conn.addr] = conn
-	err = conn.DbUse()
-	if err != nil {
+	if err := conn.DbUse(); err != nil {
+		conn.close()
+		return nil, err
+	}
+	if err := conn.setDefaults(); err != nil {
 		conn.close()
 		return nil, err
 	}
@@ -343,4 +346,20 @@ func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
 	rst[0].Next()
 	err = rst[0].Scan(&active, &isMaster)
 	return true, active, isMaster, err
+}
+
+func (conn *Conn) setDefaults() error {
+	//defaults copied from .Net Driver
+	_, err := conn.exec(`
+    set quoted_identifier on
+    set arithabort off
+    set numeric_roundabort off
+    set ansi_warnings on
+    set ansi_padding on
+    set ansi_nulls on
+    set concat_null_yields_null on
+    set cursor_close_on_commit off
+    set implicit_transactions off
+   `)
+	return err
 }

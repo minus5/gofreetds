@@ -206,8 +206,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	default:
 		if str, ok := value.(string); ok {
 			data = []byte(str)
-			if datatype == XSYBNVARCHAR ||
-				datatype == XSYBNCHAR {
+			if datatype == XSYBNVARCHAR ||datatype == XSYBNCHAR {
 				//FIXME - adding len bytes to the end of the buf
 				//        realy don't understand why this is necessary
 				//        come to this solution by try and error
