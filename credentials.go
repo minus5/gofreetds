@@ -1,13 +1,13 @@
 package freetds
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 )
 
 type credentials struct {
 	user, pwd, host, database, mirrorHost string
-	maxPoolSize int
+	maxPoolSize                           int
 }
 
 func NewCredentials(connStr string) *credentials {
@@ -38,4 +38,3 @@ func NewCredentials(connStr string) *credentials {
 	}
 	return crd
 }
-

@@ -13,7 +13,7 @@ type Result struct {
 	RowsAffected int
 	Message      string
 	currentRow   int
-	scanCount     int
+	scanCount    int
 }
 
 func NewResult() *Result {
@@ -105,7 +105,7 @@ func (r *Result) scanStruct(s *reflect.Value) error {
 		if f.IsValid() {
 			if f.CanSet() {
 				if err := convertAssign(f.Addr().Interface(), r.Rows[r.currentRow][i]); err != nil {
-				//if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
+					//if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
 					return err
 				}
 				r.scanCount++
@@ -118,7 +118,7 @@ func (r *Result) scanStruct(s *reflect.Value) error {
 func asStructPointer(p interface{}) *reflect.Value {
 	sp := reflect.ValueOf(p)
 	if sp.Kind() == reflect.Ptr {
-		s := sp.Elem() 
+		s := sp.Elem()
 		if s.Kind() == reflect.Struct {
 			return &s
 		}
@@ -128,7 +128,7 @@ func asStructPointer(p interface{}) *reflect.Value {
 
 func isPointer(p interface{}) bool {
 	sp := reflect.ValueOf(p)
-	return sp.Kind() == reflect.Ptr 
+	return sp.Kind() == reflect.Ptr
 }
 
 //assignValues copies to dest values in src

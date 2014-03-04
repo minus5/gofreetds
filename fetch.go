@@ -100,9 +100,9 @@ func (col *column) Value() interface{} {
 
 func dbbindtype(datatype C.int) (C.int, C.int) {
 	switch datatype {
-		//this will map decimal, and numeric datatypes to float
+	//this will map decimal, and numeric datatypes to float
 	case C.SYBDECIMAL, C.SYBNUMERIC:
-		return C.FLT8BIND,C.SYBFLT8
+		return C.FLT8BIND, C.SYBFLT8
 		//for all other types return datatype as second param
 	case C.SYBIMAGE, C.SYBVARBINARY, C.SYBBINARY:
 		return C.BINARYBIND, datatype

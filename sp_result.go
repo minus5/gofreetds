@@ -4,17 +4,16 @@ import (
 	"errors"
 )
 
-
 func NewSpResult() *SpResult {
 	return &SpResult{currentResult: -1, status: -1}
 }
 
 //Stored procedure execution result.
 type SpResult struct {
-	results      []*Result
-	status       int
-	outputParams []*SpOutputParam
-	currentResult int 
+	results       []*Result
+	status        int
+	outputParams  []*SpOutputParam
+	currentResult int
 }
 
 //Does the stored procedure returned any resultsets.
@@ -40,7 +39,7 @@ func (r *SpResult) ResultsCount() int {
 //Returns current result
 func (r *SpResult) Result() *Result {
 	if r.currentResult == -1 {
-		r.NextResult() 
+		r.NextResult()
 	}
 	if !r.resultExists() {
 		return nil
@@ -57,7 +56,7 @@ func (r *SpResult) NextResult() bool {
 	r.currentResult++
 	return r.resultExists()
 }
- 
+
 //Scan current result.
 func (r *SpResult) Scan(dest ...interface{}) error {
 	rst := r.Result()

@@ -21,16 +21,16 @@ func TestInt(t *testing.T) {
 
 func TestInt16(t *testing.T) {
 	testToSqlToType(t, SYBINT2, int16(32767))
-	testToSqlToType(t, SYBINT2, int16(-32768)) 
-	testToSqlToType(t, SYBINT2, 123) 
+	testToSqlToType(t, SYBINT2, int16(-32768))
+	testToSqlToType(t, SYBINT2, 123)
 	//overflow
 	data, err := typeToSqlBuf(SYBINT2, 32768)
 	assert.Nil(t, err)
 	i16 := sqlBufToType(SYBINT2, data)
 	assert.Equal(t, i16, -32768)
 	//error
-	 _, err = typeToSqlBuf(SYBINT2, "pero")
-	 assert.NotNil(t, err)
+	_, err = typeToSqlBuf(SYBINT2, "pero")
+	assert.NotNil(t, err)
 }
 
 func TestInt8(t *testing.T) {

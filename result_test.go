@@ -89,18 +89,18 @@ func TestResultScanOnNonPointerValues(t *testing.T) {
 func TestResultScanIntoStruct(t *testing.T) {
 	r := testResult()
 	var s struct {
-		I int
-		S string
+		I  int
+		S  string
 		Tm time.Time
-		F float64
+		F  float64
 	}
 	r.Next()
 	err := r.Scan(&s)
-	assert.Nil(t, err) 
+	assert.Nil(t, err)
 	assert.Equal(t, s.I, 1)
 	assert.Equal(t, s.S, "two")
 	assert.Equal(t, s.Tm, now)
-	assert.Equal(t, s.F, float64(123.45)) 
+	assert.Equal(t, s.F, float64(123.45))
 	assert.Equal(t, 4, r.scanCount)
 
 	err = r.MustScan(4, &s)
@@ -112,17 +112,17 @@ func TestResultScanIntoStruct(t *testing.T) {
 func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
 	r := testResult()
 	var s struct {
-		Int int
-		Int8 int
-		Int16 int
-		Int32 int
-		Int64 int
+		Int     int
+		Int8    int
+		Int16   int
+		Int32   int
+		Int64   int
 		Float32 float64
 		Float64 float32
 	}
 	r.Next()
 	err := r.Scan(&s)
-	assert.Nil(t, err) 
+	assert.Nil(t, err)
 	assert.Equal(t, s.Int, 1)
 	assert.Equal(t, s.Int8, 2)
 	assert.Equal(t, s.Int16, 3)

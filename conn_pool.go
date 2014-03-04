@@ -106,8 +106,8 @@ func (p *ConnPool) Do(handler func(*Conn) error) error {
 }
 
 //Get new connection from pool, and execute handler in transaction.
-//If handler returns error transaction will be rolled back. 
-//Release connection after handerl is called. 
+//If handler returns error transaction will be rolled back.
+//Release connection after handerl is called.
 func (p *ConnPool) DoInTransaction(handler func(*Conn) error) error {
 	return p.Do(func(conn *Conn) error {
 		conn.Begin()
@@ -120,7 +120,6 @@ func (p *ConnPool) DoInTransaction(handler func(*Conn) error) error {
 		return err
 	})
 }
-
 
 func (p *ConnPool) getPooled() *Conn {
 	p.poolMutex.Lock()
@@ -187,7 +186,7 @@ func (p *ConnPool) cleanup() {
 }
 
 //Statistic about connections in the pool.
-func (p* ConnPool) Stat() (max, count, active int) {
+func (p *ConnPool) Stat() (max, count, active int) {
 	max = p.maxConn
 	count = p.connCount
 	inactive := len(p.pool)

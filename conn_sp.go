@@ -37,7 +37,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	}
 	for i, spParam := range spParams {
 		//get datavalue for the suplied stored procedure parametar
-		var datavalue *C.BYTE 
+		var datavalue *C.BYTE
 		datalen := C.DBINT(0)
 		if i < len(params) {
 			param := params[i]
@@ -52,7 +52,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 					//fmt.Printf("dbrpcparam %s: [%v] '%s'\n", spParam.Name, data, data)
 				}
 			}
-		} 
+		}
 		//set parametar valus, call dbrpcparam
 		if i < len(params) || spParam.IsOutput {
 			maxOutputSize := C.DBINT(0)
@@ -68,7 +68,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 				return nil, errors.New("dbrpcparam failed")
 			}
 		}
-	} 
+	}
 	//execute
 	if C.dbrpcsend(conn.dbproc) == C.FAIL {
 		return nil, conn.raiseError("dbrpcsend failed")

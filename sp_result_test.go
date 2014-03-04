@@ -35,7 +35,7 @@ func TestSpResultScan(t *testing.T) {
 	r1 := testResult()
 	r2 := testResult()
 	r.results = []*Result{r1, r2}
-	
+
 	var i int
 	err := r.Scan(&i)
 	assert.Nil(t, err)

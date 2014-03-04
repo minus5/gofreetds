@@ -53,7 +53,7 @@ func TestExecSpInputParamsTypes(t *testing.T) {
     return 1`)
 	assert.Nil(t, err)
 	//all input types are int, but they are converted to apropriate sql types
-	rst, err := conn.ExecSp("test_input_params3", 1, 2 ,3, 4, 5, 6)
+	rst, err := conn.ExecSp("test_input_params3", 1, 2, 3, 4, 5, 6)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, rst.Status())
 	var p1, p2, p3, p4, p5, p6 int
@@ -169,7 +169,6 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	assert.Equal(t, 1.27, f3)
 }
 
-
 func TestBugFixEmptyStringInSpParms(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_bug_fix_1", `@p1 varchar(255) as
@@ -191,7 +190,7 @@ func TestBugFixEmptyStringInSpParms(t *testing.T) {
 /*
 func TestBugFixSegmentationFault(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 int, 
+	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 int,
      @p2 varchar(255),
      @p3 varchar(255),
      @p4 varchar(255),
@@ -217,7 +216,7 @@ func TestBugFixSegmentationFault(t *testing.T) {
 }
 */
 
-func TestStoredProcedureNotExists(t *testing.T) { 
+func TestStoredProcedureNotExists(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_not_exists", `as return`)
 	assert.Nil(t, err)

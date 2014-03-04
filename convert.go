@@ -7,7 +7,7 @@
 package freetds
 
 import (
-	"database/sql" 
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -99,7 +99,7 @@ func convertAssign(dest, src interface{}) error {
 	case *string:
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
-			case reflect.Bool,
+		case reflect.Bool,
 			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 			reflect.Float32, reflect.Float64:
@@ -109,7 +109,7 @@ func convertAssign(dest, src interface{}) error {
 	case *[]byte:
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
-			case reflect.Bool,
+		case reflect.Bool,
 			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 			reflect.Float32, reflect.Float64:
@@ -119,7 +119,7 @@ func convertAssign(dest, src interface{}) error {
 	case *RawBytes:
 		sv = reflect.ValueOf(src)
 		switch sv.Kind() {
-			case reflect.Bool,
+		case reflect.Bool,
 			reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 			reflect.Float32, reflect.Float64:

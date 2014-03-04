@@ -8,7 +8,7 @@ import (
 //This code is stolen from:
 //https://bitbucket.org/pkg/inflect/src/8961c3750a47b8c0b3e118d52513b97adf85a7e8/inflect.go
 
-// "dino_party" -> "DinoParty" 
+// "dino_party" -> "DinoParty"
 func camelize(word string) string {
 	words := splitAtCaseChangeWithTitlecase(word)
 	return strings.Join(words, "")

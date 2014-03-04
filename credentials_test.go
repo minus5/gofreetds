@@ -1,8 +1,8 @@
 package freetds
 
 import (
-	"testing"
 	"github.com/stretchrcom/testify/assert"
+	"testing"
 )
 
 func TestParseConnectionString(t *testing.T) {

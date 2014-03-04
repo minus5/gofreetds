@@ -2,11 +2,11 @@ package freetds
 
 import (
 	"fmt"
+	"github.com/stretchrcom/testify/assert"
 	"os"
 	"strings"
 	"testing"
 	"time"
-	"github.com/stretchrcom/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`

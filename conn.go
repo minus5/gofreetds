@@ -91,7 +91,7 @@ func (conn *Conn) addError(err string) {
 //  conn, err := NewConn("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror")
 //
 //Mirror is optional, other params are mandatory.
-func NewConn(connStr string) (*Conn, error) { 
+func NewConn(connStr string) (*Conn, error) {
 	return connectWithCredentials(NewCredentials(connStr))
 }
 
@@ -230,14 +230,14 @@ func (conn *Conn) isMirrorSlave() bool {
 		return true
 	}
 	if defined, active, isMaster, err := conn.MirrorStatus(); err == nil {
-		return defined && active && !isMaster 
+		return defined && active && !isMaster
 	}
 	return false
 }
 
 func (conn *Conn) isMirrorMessage() bool {
 	return strings.Contains(conn.Message, "It is acting as a mirror database") ||
-		strings.Contains(conn.Message, "It is in the middle of a restore") 
+		strings.Contains(conn.Message, "It is in the middle of a restore")
 }
 
 func (conn *Conn) switchMirror() {
