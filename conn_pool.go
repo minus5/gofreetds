@@ -46,6 +46,9 @@ type ConnPool struct {
 //There is always one connection in the pool.
 //
 //Returns err if fails to create initial connection.
+//Valid connection string examples:
+//   "host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;"
+//   "host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror"
 func NewConnPool(connStr string) (*ConnPool, error) {
 	p := &ConnPool{
 		connStr:       connStr,
@@ -70,7 +73,7 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 }
 
 func (p *ConnPool) newConn() (*Conn, error) {
-	conn, err := ConnectWithConnectionString(p.connStr)
+	conn, err := NewConn(p.connStr)
 	if err == nil {
 		conn.belongsToPool = p
 		//share stored procedure params cache between connections in the pool

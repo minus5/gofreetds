@@ -15,7 +15,7 @@ type MssqlDriver struct{}
 
 //implements Open for Driver interface from http://golang.org/src/pkg/database/sql/driver/driver.go
 func (d *MssqlDriver) Open(dsn string) (driver.Conn, error) {
-	conn, err := ConnectWithConnectionString(dsn)
+	conn, err := NewConn(dsn)
 	if err != nil {
 		return nil, err
 	}

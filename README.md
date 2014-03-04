@@ -106,7 +106,7 @@ Each row is array of values. Each column is array of ResultColumn objects.
 
 Execute query with params:
 ```go
-  rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
+rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
 ```
 
 

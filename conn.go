@@ -86,22 +86,12 @@ func (conn *Conn) addError(err string) {
 	conn.Error += err
 }
 
-//Connect to the database, returns new connection or error.
-func Connect(user, pwd, host, database string) (*Conn, error) {
-	return connectWithCredentials(&credentials{user: user, pwd: pwd, host: host, database: database})
-}
-
-//Connect to the database with mirroring support, returns new connection or error.
-func Connect2(user, pwd, host, mirrorHost, database string) (*Conn, error) {
-	return connectWithCredentials(&credentials{user: user, pwd: pwd, host: host, database: database, mirrorHost: mirrorHost})
-}
-
 //Connect to the database with connection string, returns new connection or error.
 //Example:
-//  conn, err := ConnectWithConnectionString("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror")
+//  conn, err := NewConn("host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror")
 //
 //Mirror is optional, other params are mandatory.
-func ConnectWithConnectionString(connStr string) (*Conn, error) {
+func NewConn(connStr string) (*Conn, error) { 
 	return connectWithCredentials(NewCredentials(connStr))
 }
 

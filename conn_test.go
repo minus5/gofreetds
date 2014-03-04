@@ -51,7 +51,7 @@ create procedure freetds_return_value as
   return -5`}
 
 func ConnectToTestDb(t *testing.T) *Conn {
-	conn, err := ConnectWithConnectionString(testDbConnStr(1))
+	conn, err := NewConn(testDbConnStr(1))
 	if err != nil {
 		t.Errorf("can't connect to the test database")
 		return nil
