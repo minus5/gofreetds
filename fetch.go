@@ -2,6 +2,7 @@ package freetds
 
 import (
 	"errors"
+//	"fmt"
 )
 
 /*
@@ -33,6 +34,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			name := C.GoString(C.dbcolname(conn.dbproc, no))
 			size := C.dbcollen(conn.dbproc, no)
 			typ := C.dbcoltype(conn.dbproc, no)
+			if typ == SYBUNIQUE {
+				size = 36
+			}
 			bindTyp, typ := dbbindtype(typ)
 			result.addColumn(name, int(size), int(typ))
 			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ {
@@ -45,6 +49,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			col.bindTyp = int(bindTyp)
 			col.buffer = make([]byte, size+1)
 			erc = C.dbbind(conn.dbproc, no, bindTyp, size+1, (*C.BYTE)(&col.buffer[0]))
+			//fmt.Printf("dbbind %d, %d, %v\n", bindTyp, size+1, col.buffer)
 			if erc == C.FAIL {
 				return nil, errors.New("dbbind failed: no such column or no such conversion possible, or target buffer too small")
 			}
@@ -62,6 +67,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			if rowCode == C.REG_ROW {
 				for j := 0; j < cols; j++ {
 					col := columns[j]
+					//fmt.Printf("col: %#v\nvalue:%s\n", col, col.Value())
 					result.addValue(i, j, col.Value())
 				}
 			}
@@ -130,6 +136,8 @@ func dbbindtype(datatype C.int) (C.int, C.int) {
 		return C.MONEYBIND, datatype
 	case C.SYBMONEY4:
 		return C.SMALLMONEYBIND, datatype
+	case SYBUNIQUE: 
+		return C.STRINGBIND, C.SYBCHAR
 	}
 	//TODO - log unknown datatype
 	return C.NTBSTRINGBIND, datatype

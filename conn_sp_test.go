@@ -169,7 +169,7 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	assert.Equal(t, 1.27, f3)
 }
 
-func TestBugFixEmptyStringInSpParms(t *testing.T) {
+func TestBugFixEmptyStringInSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_bug_fix_1", `@p1 varchar(255) as
     select @p1
@@ -178,6 +178,22 @@ func TestBugFixEmptyStringInSpParms(t *testing.T) {
 	rst, err := conn.ExecSp("test_sp_bug_fix_1", "")
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
+}
+
+func TestBugGuidInSpParams(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 uniqueidentifier as
+    select cast(@p1 as varchar(255)), @p1
+    return 0`)
+	assert.Nil(t, err)
+	var in, out, out2 string
+	in = "B5A0E32D-3F48-4CC2-A44B-74753D9CACF8"
+	rst, err := conn.ExecSp("test_sp_bug_fix_2", in)
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	rst.Scan(&out, &out2)
+	assert.Equal(t, in, out)
+	assert.Equal(t, in, out2)
 }
 
 //ova petlja je ponekad pucala sa:

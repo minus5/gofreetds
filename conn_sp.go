@@ -158,6 +158,10 @@ order by parameter_id
 	for i := 0; r.Next(); i++ {
 		p := &spParam{}
 		err := r.Scan(&p.Name, &p.ParameterId, &p.UserTypeId, &p.IsOutput, &p.MaxLength, &p.Precision, &p.Scale)
+		//fixme: mapping uniqueidentifier to string
+		if p.UserTypeId == 36 { 
+			p.UserTypeId = 39
+		}
 		if err != nil {
 			return nil, err
 		}

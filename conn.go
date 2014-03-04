@@ -38,14 +38,16 @@ import (
 
  static void my_dblogin(LOGINREC* login, char* username, char* password) {
   setenv("TDSPORT", "1433", 1);
-  setenv("TDSVER", "8.0", 1);
+  //setenv("TDSVER", "8.0", 1);
   dbsetlogintime(10);
+
 
   dberrhandle(err_handler);
   dbmsghandle(msg_handler);
   DBSETLUSER(login, username);
   DBSETLPWD(login, password);
   dbsetlname(login, "UTF-8", DBSETCHARSET);
+  dbsetlversion(login, DBVERSION_72);
  }
 
  static long dbproc_addr(DBPROCESS * dbproc) {
