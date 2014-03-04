@@ -2,7 +2,17 @@
 
 Go FreeTDS wrapper. Native Sql Server database driver.
 
-##Dependencies
+Features:
+
+  * can be used as [database/sql](http://golang.org/pkg/database/sql/) [driver](#using-as-database/sql-driver)
+  * handles calling [stored procedures](#stored-procedures)
+  * handles multiple resultsets
+  * supports database mirroring
+
+##Get started
+
+###Instal dependencines
+
 [FreeTDS](http://www.freetds.org/) libraries must be installed on the system.
 
 Mac
@@ -14,8 +24,18 @@ Ubuntu, Debian...
   sudo apt-get install freetds
 ```
 
+### Go get
 
-## Can be used as [database/sql](http://golang.org/pkg/database/sql/) driver
+```
+   go get github.com/minus5/gofreetds 
+```
+
+### Docs
+
+  http://godoc.org/github.com/minus5/gofreetds
+
+
+## Using as database/sql driver
 
 Name of the driver is mssql.
 ```go
@@ -28,7 +48,7 @@ Name of the driver is mssql.
 ```
 Full example is examples/mssql.
 
-## Usage without database/sql
+## Stored Procedures
 
 What I'm missing in database/sql is calling stored procedures, handling return values and output params. And especially handling multiple result sets.
 Which is all supported by FreeTDS and of course by gofreetds.
@@ -71,7 +91,7 @@ Full example in examples/stored_procedure
 
 ## Other usage
 
-Expect calling stored procedures executing arbitary sql is supported with Exec or ExecuteSql.
+Expect calling stored procedures executing arbitrary sql is supported with Exec or ExecuteSql.
 
 Execute query:
 ```go
@@ -87,7 +107,10 @@ Execute query with params:
   rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
 ```
 
-## Tests
+
+
+## Testing
+
 Tests depend on the pubs database.
 
 Pubs sample database install script could be [downloaded](http://www.microsoft.com/en-us/download/details.aspx?id=23654).
