@@ -48,7 +48,7 @@ row := db.QueryRow("SELECT au_fname, au_lname name FROM authors WHERE au_id = ?"
 var firstName, lastName string
 err = row.Scan(&firstName, &lastName)
 ```
-Full example in examples/mssql.
+Full example in example/mssql.
 
 ## Stored Procedures
 
@@ -89,7 +89,7 @@ if rst.NextResult() {
     }
 }
 ```
-Full example in examples/stored_procedure
+Full example in example/stored_procedure
 
 ## Other usage
 
@@ -103,7 +103,7 @@ Rst is array of results.
 Each result has Columns and Rows array.
 Each row is array of values. Each column is array of ResultColumn objects.
 
-Full example in examples/exec.
+Full example in example/exec.
 
 Execute query with params:
 ```go
