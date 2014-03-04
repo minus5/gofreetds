@@ -28,3 +28,11 @@ todo
 /example/listic
 
 *.out
+
+
+example/exec/exec
+example/mssql/mssql
+example/scan_struct/scan_struct
+example/stored_procedure/stored_procedure
+
+build_examples
