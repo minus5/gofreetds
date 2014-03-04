@@ -1,13 +1,15 @@
-##About
+##gofreetds
 
-Go FreeTDS wrapper. Native Sql Server database driver.
+Go [FreeTDS](http://www.freetds.org/) wrapper. Native Sql Server database driver.
 
 Features:
 
-  * can be used as [database/sql](http://golang.org/pkg/database/sql/) [driver](#using-as-database/sql-driver)
+  * can be used as [database/sql](http://golang.org/pkg/database/sql/) driver
   * handles calling [stored procedures](#stored-procedures)
   * handles multiple resultsets
   * supports database mirroring
+  * connection pooling
+  * scaning resultsets into structs
 
 ##Get started
 
@@ -17,17 +19,17 @@ Features:
 
 Mac
 ```shell
-  brew install freetds
+brew install freetds
 ```
 Ubuntu, Debian...
 ```shell
-  sudo apt-get install freetds
+sudo apt-get install freetds
 ```
 
 ### Go get
 
 ```
-   go get github.com/minus5/gofreetds 
+go get github.com/minus5/gofreetds 
 ```
 
 ### Docs
@@ -39,14 +41,14 @@ Ubuntu, Debian...
 
 Name of the driver is mssql.
 ```go
-   db, err := sql.Open("mssql", connStr)
-   ...
-   row := db.QueryRow("SELECT au_fname, au_lname name FROM authors WHERE au_id = ?", "172-32-1176")
-   ..
-   var firstName, lastName string
-   err = row.Scan(&firstName, &lastName)
+db, err := sql.Open("mssql", connStr)
+...
+row := db.QueryRow("SELECT au_fname, au_lname name FROM authors WHERE au_id = ?", "172-32-1176")
+..
+var firstName, lastName string
+err = row.Scan(&firstName, &lastName)
 ```
-Full example is examples/mssql.
+Full example in examples/mssql.
 
 ## Stored Procedures
 
@@ -55,47 +57,47 @@ Which is all supported by FreeTDS and of course by gofreetds.
 
 Connect:
 ```go
-  //create connection pool (for max. 100 connections)
-  pool, err := freetds.NewConnPool("user=ianic;pwd=ianic;database=pubs;host=iow", 100)
-  defer pool.Close()
-  ...
-  //get connection
-  conn, err := pool.Get()
-  defer conn.Close()
+//create connection pool (for max. 100 connections)
+pool, err := freetds.NewConnPool("user=ianic;pwd=ianic;database=pubs;host=iow", 100)
+defer pool.Close()
+...
+//get connection
+conn, err := pool.Get()
+defer conn.Close()
 ```
 Execute stored procedure:
 ```go
-  rst, err := conn.ExecSp("sp_help", "authors")  
+rst, err := conn.ExecSp("sp_help", "authors")  
 ```
 Read sp return value, and output params:
 ```go
-	returnValue := rst.Status()
-    var param1, param2 int
-    rst.ParamScan(&param1, &param2)
+returnValue := rst.Status()
+var param1, param2 int
+rst.ParamScan(&param1, &param2)
 ```
 Read sp resultset (fill the struct):
 ```go
-    author := &Author{}
-	rst.Scan(author)
+author := &Author{}
+rst.Scan(author)
 ```
 Read next resultset:
 ```go
-    if rst.NextResult() {
-        for rst.Next() {
-            var v1, v2 string
-            rst.Scan(&v1, &v2)
-        }
+if rst.NextResult() {
+    for rst.Next() {
+        var v1, v2 string
+        rst.Scan(&v1, &v2)
     }
+}
 ```
 Full example in examples/stored_procedure
 
 ## Other usage
 
-Expect calling stored procedures executing arbitrary sql is supported with Exec or ExecuteSql.
+Executing arbitrary sql is supported with Exec or ExecuteSql.
 
 Execute query:
 ```go
-  rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
+rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
 ```
 rst is array of results.
 Each result has Columns and Rows array.
