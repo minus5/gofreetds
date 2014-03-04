@@ -14,7 +14,25 @@ Ubuntu, Debian...
   sudo apt-get install freetds
 ```
 
-##Usage
+
+## Can be used as [database/sql](http://golang.org/pkg/database/sql/) driver
+
+Name of the driver is mssql.
+```go
+   db, err := sql.Open("mssql", connStr)
+   ...
+   row := db.QueryRow("SELECT au_fname, au_lname name FROM authors WHERE au_id = ?", "172-32-1176")
+   ..
+   var firstName, lastName string
+   err = row.Scan(&firstName, &lastName)
+```
+Full example is examples/mssql.
+
+## Usage without database/sql
+
+What I'm missing in database/sql is calling stored procedures, handling return values and output params. And especially handling multiple result sets.
+Which is all supported by FreeTDS and of course by gofreetds.
+
 Connect:
 ```go
   //create connection pool (for max. 100 connections)
@@ -25,6 +43,36 @@ Connect:
   conn, err := pool.Get()
   defer conn.Close()
 ```
+Execute stored procedure:
+```go
+  rst, err := conn.ExecSp("sp_help", "authors")  
+```
+Read sp return value, and output params:
+```go
+	returnValue := rst.Status()
+    var param1, param2 int
+    rst.ParamScan(&param1, &param2)
+```
+Read sp resultset (fill the struct):
+```go
+    author := &Author{}
+	rst.Scan(author)
+```
+Read next resultset:
+```go
+    if rst.NextResult() {
+        for rst.Next() {
+            var v1, v2 string
+            rst.Scan(&v1, &v2)
+        }
+    }
+```
+Full example in examples/stored_procedure
+
+## Other usage
+
+Expect calling stored procedures executing arbitary sql is supported with Exec or ExecuteSql.
+
 Execute query:
 ```go
   rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
@@ -33,10 +81,6 @@ rst is array of results.
 Each result has Columns and Rows array.
 Each row is array of values. Each column is array of ResultColumn objects.
 
-Execute stored procedure:
-```go
-  spRst, err := conn.ExecSp("sp_help", "authors")
-```
 
 Execute query with params:
 ```go
