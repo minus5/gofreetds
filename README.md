@@ -99,17 +99,16 @@ Execute query:
 ```go
 rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
 ```
-rst is array of results.
+Rst is array of results.
 Each result has Columns and Rows array.
 Each row is array of values. Each column is array of ResultColumn objects.
 
+Full example in examples/exec.
 
 Execute query with params:
 ```go
 rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
 ```
-
-
 
 ## Testing
 
