@@ -26,6 +26,9 @@ import "C"
 //Example:
 //  conn.ExecSp("sp_help", "authors")
 func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
+	//hold references to data sent to the C code until the end of this function
+	//without this GC could remove something used later in C, and we will get SIGSEG
+	refHolder := make([]*[]byte, 0)
 	conn.clearMessages()
 	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
 		return nil, conn.raiseError("dbrpcinit failed")
@@ -49,7 +52,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 				if len(data) > 0 {
 					datalen = C.DBINT(len(data))
 					datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
-					//fmt.Printf("dbrpcparam %s: [%v] '%s'\n", spParam.Name, data, data)
+					refHolder = append(refHolder, &data)
 				}
 			}
 		}
@@ -65,8 +68,8 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			defer C.free(unsafe.Pointer(paramname))
 			if C.dbrpcparam(conn.dbproc, paramname, status,
 				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
-				return nil, errors.New("dbrpcparam failed")
-			}
+					return nil, errors.New("dbrpcparam failed")
+				}
 		}
 	}
 	//execute

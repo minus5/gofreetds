@@ -196,6 +196,7 @@ func TestBugGuidInSpParams(t *testing.T) {
 	assert.Equal(t, in, out2)
 }
 
+/*
 //ova petlja je ponekad pucala sa:
 // SIGSEGV: segmentation violation
 // signal arrived during cgo execution
@@ -203,31 +204,31 @@ func TestBugGuidInSpParams(t *testing.T) {
 //kada bi stavio onaj select vise ne bi pucalo
 //kada bi stavio GC takodjer ne
 //a i kada puca to je stohasticki
-/*
+
+//SOLVED - nakon sto sam dodao refHolder u ExecSp vise ne puca
+
 func TestBugFixSegmentationFault(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 int,
-     @p2 varchar(255),
+     --@p2 varchar(255),
      @p3 varchar(255),
      @p4 varchar(255),
      @p5 money as
         --select @p2
         return 1`)
 	assert.Nil(t, err)
-	s := "1"
-	s2 := "1d"
+	// s := "1"
+	s2 := "pero zdero"
 	s3 := "description"
 	i := 123
 	f := 12.34
 	for {
-		rst, err := conn.ExecSp("test_sp_bug_fix_2", i, s, s2, s3, f)
+		rst, err := conn.ExecSp("test_sp_bug_fix_2", i, s2, s3, f)
 		assert.Nil(t, err)
 		assert.NotNil(t, rst)
 		if err != nil {
-			break
+		 	break
 		}
-		//iz nepoznatog razloga ovo je znalo pomoci
-		//runtime.GC()
 	}
 }
 */
