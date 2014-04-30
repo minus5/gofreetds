@@ -39,7 +39,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			}
 			bindTyp, typ := dbbindtype(typ)
 			result.addColumn(name, int(size), int(typ))
-			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ {
+			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
 			}
 			col := &columns[i]

@@ -130,21 +130,18 @@ func TestStoredProcedureReturnValue(t *testing.T) {
 	}
 }
 
-func TestReading(t *testing.T) {
-	t.Skip("text and ntext column are not readed properly")
+func TestReadingTextNtext(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	if conn == nil {
 		return
 	}
 	defer conn.Close()
-
-	//text and ntext columns is not readed properly
-	results, err := conn.Exec(`select * from freetds_types`)
-	printResults(results)
-	if err != nil || len(results) != 1 {
-		fmt.Printf("error: %s\n%s\n%s", err, conn.Message, conn.Error)
-		return
-	}
+	results, err := conn.Exec(`select top 2 text, ntext from dbo.freetds_types`)
+	assert.Nil(t, err)
+	assert.Equal(t, "išo medo u dućan    5", results[0].Rows[0][0])
+	assert.Equal(t, "išo medo u dućan    6", results[0].Rows[0][1])
+	assert.Equal(t, "nije reko dobar dan 5", results[0].Rows[1][0])
+	assert.Equal(t, "nije reko dobar dan 6", results[0].Rows[1][1])
 }
 
 func TestRetryOnKilledConnection(t *testing.T) {
