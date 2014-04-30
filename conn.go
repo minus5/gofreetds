@@ -37,11 +37,7 @@ import (
  }
 
  static void my_dblogin(LOGINREC* login, char* username, char* password) {
-  setenv("TDSPORT", "1433", 1);
-  //setenv("TDSVER", "8.0", 1);
   dbsetlogintime(10);
-
-
   dberrhandle(err_handler);
   dbmsghandle(msg_handler);
   DBSETLUSER(login, username);
