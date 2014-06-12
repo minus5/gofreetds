@@ -206,7 +206,17 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to []byte.", value))
 		}
 	default:
-		if str, ok := value.(string); ok {
+		if str, ok := value.(string); ok { 
+			if str == "" {
+				//dbrpcparam treats any data with datalen 0 as NULL value
+				//(rpc.c line 241 in freetds)
+				//It is kinda safe to put this into db if len function is used to check for emtpy strings.
+				//Len strips trailing spaces, and returns 0 for ' '.
+				//Links:
+				//  https://github.com/pymssql/pymssql/issues/243
+				//  http://stackoverflow.com/questions/2025585/len-function-not-including-trailing-spaces-in-sql-server
+				str = " "
+			}
 			data = []byte(str)
 			if datatype == XSYBNVARCHAR || datatype == XSYBNCHAR {
 				//FIXME - adding len bytes to the end of the buf

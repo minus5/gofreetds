@@ -172,12 +172,18 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 func TestBugFixEmptyStringInSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_bug_fix_1", `@p1 varchar(255) as
-    select @p1
+    select '_' + @p1 + '_', len(@p1)
     return 0`)
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_sp_bug_fix_1", "")
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
+	var s string
+	var l int
+	rst.Scan(&s, &l)
+	//we are treating empty strings as single space
+	assert.Equal(t, "_ _", s)
+	assert.Equal(t, 0, l)
 }
 
 func TestBugGuidInSpParams(t *testing.T) {
