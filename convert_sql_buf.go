@@ -47,6 +47,13 @@ const (
 
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 
+func toLocalTime(value time.Time) time.Time {
+	value = value.In(time.Local)
+	_, of := value.Zone()
+	value = value.Add(time.Duration(-of) * time.Second)
+	return value
+}
+
 func sqlBufToType(datatype int, data []byte) interface{} {
 	buf := bytes.NewBuffer(data)
 	switch datatype {
@@ -71,17 +78,15 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 		var sec uint32 /* 300ths of a second since midnight */
 		binary.Read(buf, binary.LittleEndian, &days)
 		binary.Read(buf, binary.LittleEndian, &sec)
-		value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-		value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
-		return value
+		value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
+		return toLocalTime(value)
 	case SYBDATETIME4:
 		var days uint16 /* number of days since 1/1/1900 */
 		var mins uint16 /* number of minutes since midnight */
 		binary.Read(buf, binary.LittleEndian, &days)
 		binary.Read(buf, binary.LittleEndian, &mins)
-		value := time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
-		value = value.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(mins) * time.Minute)
-		return value
+		value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(mins) * time.Minute)
+		return toLocalTime(value)
 	case SYBMONEY:
 		var high int32
 		var low uint32
@@ -176,10 +181,14 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			}
 		}
 	case SYBDATETIME:
+		//database time is always in local timezone
 		if tm, ok := value.(time.Time); ok {
-			days := int32(tm.Sub(sqlStartTime).Hours() / 24)
-			secs := uint32((((tm.Hour()*60+tm.Minute())*60)+tm.Second())*300 +
-				tm.Nanosecond()/3333333)
+			tm = tm.Local()
+			diff := tm.UnixNano() - sqlStartTime.UnixNano()
+			_, of := tm.Zone()
+			diff += int64(time.Duration(of) * time.Second)
+			days := int32(diff / 1e9 / 60 / 60 / 24)
+			secs := uint32(float64(diff - int64(days) * 1e9 * 60 * 60 * 24) * 0.0000003)
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, secs)
@@ -189,8 +198,12 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 	case SYBDATETIME4:
 		if tm, ok := value.(time.Time); ok {
-			days := uint16(tm.Sub(sqlStartTime).Hours() / 24)
-			mins := uint16(tm.Hour()*60 + tm.Minute())
+			tm = tm.Local()
+			diff := tm.Unix() - sqlStartTime.Unix()
+			_, of := tm.Zone()
+			diff += int64(of)
+			days := uint16(diff / 60 / 60 / 24)
+			mins := uint16((diff - int64(days) * 60 * 60 * 24) / 60)
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, mins)

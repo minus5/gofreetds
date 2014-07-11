@@ -252,3 +252,35 @@ func TestStoredProcedureNotExists(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, rst)
 }
+
+
+func TestTimeSpParams(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_time_sp_params", `@p1 datetime as
+    insert into tm (tm) values(@p1)
+    select @p1, 123
+    return 0`)
+	assert.Nil(t, err)
+
+	f := func(tmIn time.Time) {
+		var tmOut time.Time
+		var i int
+		rst, err := conn.ExecSp("test_sp_time_sp_params", tmIn)
+		assert.Nil(t, err)
+		assert.NotNil(t, rst)
+		rst.Next()
+		rst.Scan(&tmOut, &i)
+		assert.Equal(t, tmIn.UTC(), tmOut.UTC())
+		if !tmIn.Equal(tmOut) {
+			t.Errorf("%s != %s", tmIn, tmOut)
+		}
+	}
+
+	f(time.Unix(1404856799, 0))
+	f(time.Unix(1404856800, 0))
+	f(time.Unix(1404856801, 0))
+
+	f(time.Unix(1404856799, 0).UTC())
+	f(time.Unix(1404856800, 0).UTC())
+	f(time.Unix(1404856801, 0).UTC())
+}

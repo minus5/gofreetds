@@ -1,7 +1,6 @@
 package freetds
 
 import (
-	"fmt"
 	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
@@ -67,22 +66,36 @@ func TestMoney(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	value := time.Now()
-	typ := SYBDATETIME
-	data, err := typeToSqlBuf(typ, value)
-	assert.Nil(t, err)
-	value2 := sqlBufToType(typ, data)
-	value2t, _ := value2.(time.Time)
-	diff := value2t.Sub(value)
-	if diff > 3000000 && diff < -3000000 {
-		t.Error()
-		fmt.Printf("TestTime\n%s\n%s\ndiff: %d", value, value2t, diff)
+	f := func(value time.Time) { 
+		typ := SYBDATETIME
+		data, err := typeToSqlBuf(typ, value)
+		assert.Nil(t, err)
+		value2 := sqlBufToType(typ, data)
+		value2t, _ := value2.(time.Time)
+		diff := value2t.Sub(value)
+		if diff > 4000000 || diff < -4000000 {
+			t.Errorf("TestTime %s != %s diff: %d", value, value2t, diff)
+		}
 	}
+	f(time.Now())
+	f(time.Now().UTC())
+	f(time.Unix(1404856800, 0))
+	f(time.Unix(1404856800, 0).UTC())
 }
 
 func TestTime4(t *testing.T) {
-	value := time.Date(2014, 1, 5, 23, 24, 0, 0, time.UTC)
-	testToSqlToType(t, SYBDATETIME4, value)
+	f := func(value time.Time) {
+		typ := SYBDATETIME4
+		data, err := typeToSqlBuf(typ, value)
+		assert.Nil(t, err)
+		value2 := sqlBufToType(typ, data)
+		value2t, _ := value2.(time.Time)
+		if !value.Equal(value2t) {
+			t.Errorf("TestTime4 %s != %s", value, value2t)
+		}
+	}
+	f(time.Date(2014, 1, 5, 23, 24, 0, 0, time.UTC))
+	f(time.Date(2014, 1, 5, 23, 24, 0, 0, time.Local))
 }
 
 func TestBinary(t *testing.T) {
