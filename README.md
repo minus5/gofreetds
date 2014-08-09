@@ -23,7 +23,7 @@ brew install freetds
 ```
 Ubuntu, Debian...
 ```shell
-sudo apt-get install freetds
+sudo apt-get install freetds-dev
 ```
 
 ### Go get
