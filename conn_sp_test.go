@@ -1,10 +1,11 @@
 package freetds
 
 import (
-	"github.com/stretchrcom/testify/assert"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchrcom/testify/assert"
 )
 
 func TestExecSp(t *testing.T) {
@@ -253,7 +254,6 @@ func TestStoredProcedureNotExists(t *testing.T) {
 	assert.Nil(t, rst)
 }
 
-
 func TestTimeSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_time_sp_params", `@p1 datetime as
@@ -283,4 +283,31 @@ func TestTimeSpParams(t *testing.T) {
 	f(time.Unix(1404856799, 0).UTC())
 	f(time.Unix(1404856800, 0).UTC())
 	f(time.Unix(1404856801, 0).UTC())
+}
+
+func TestNewDateTypesParam(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_with_datetimeoffset_param", `
+    (@p1 datetimeoffset, @p2 date, @p3 time, @p4 datetime2) as
+    DECLARE @datetime datetime = @p1;
+    SELECT @datetime, @p1, @p2, @p3, @p4
+    return `)
+	assert.Nil(t, err)
+	p1 := "2025-12-10 12:32:10.1237000 +01:00"
+	p2 := "2025-12-10"
+	p3 := "12:30"
+	p4 := "2025-12-10 12:32:10"
+	rst, err := conn.ExecSp("test_sp_with_datetimeoffset_param", p1, p2, p3, p4)
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	rst.Next()
+	var op1, op2, op3, op4 string
+	var dt time.Time
+	err = rst.Scan(&dt, &op1, &op2, &op3, &op4)
+	assert.Nil(t, err)
+	assert.Equal(t, "2025-12-10T12:32:10+01:00", dt.Format(time.RFC3339))
+	assert.Equal(t, "2025-12-10 12:32:10.1237000 +01:00", op1)
+	assert.Equal(t, "2025-12-10", op2)
+	assert.Equal(t, "12:30:00.0000000", op3)
+	assert.Equal(t, "2025-12-10 12:32:10.0000000", op4)
 }

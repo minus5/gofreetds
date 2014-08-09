@@ -68,8 +68,8 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			defer C.free(unsafe.Pointer(paramname))
 			if C.dbrpcparam(conn.dbproc, paramname, status,
 				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
-					return nil, errors.New("dbrpcparam failed")
-				}
+				return nil, errors.New("dbrpcparam failed")
+			}
 		}
 	}
 	//execute
@@ -161,9 +161,9 @@ order by parameter_id
 	for i := 0; r.Next(); i++ {
 		p := &spParam{}
 		err := r.Scan(&p.Name, &p.ParameterId, &p.UserTypeId, &p.IsOutput, &p.MaxLength, &p.Precision, &p.Scale)
-		//fixme: mapping uniqueidentifier to string
-		if p.UserTypeId == 36 { 
-			p.UserTypeId = 39
+		//fixme: mapping uniqueidentifier, datetimeoffset, date, time, datetime2 to string
+		if p.UserTypeId == 0x24 || p.UserTypeId == 0x2B || p.UserTypeId == 0x28 || p.UserTypeId == 0x29 || p.UserTypeId == 0x2A {
+			p.UserTypeId = 0x27
 		}
 		if err != nil {
 			return nil, err
