@@ -60,9 +60,7 @@ func parseParams(params ...driver.Value) (paramDef, paramVal string) {
 		paramDef += fmt.Sprintf("%s %s", paramName, sqlType)
 		paramVal += fmt.Sprintf("%s=%s", paramName, sqlValue)
 	}
-	log.Printf("paramDef: ", paramDef, " paramVal: ", paramVal)
 	paramDef = strings.Replace(paramDef, "nvarchar (0)", "nvarchar (1)", -1)
-	log.Printf("modified paramDef: ", paramDef)
 	return
 }
 
