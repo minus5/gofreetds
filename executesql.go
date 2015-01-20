@@ -67,6 +67,14 @@ func quote(in string) string {
 	return strings.Replace(in, "'", "''", -1)
 }
 
+func max(a int, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
 func go2SqlDataType(value interface{}) (string, string) {
 	//TODO - bool value
 	strValue := fmt.Sprintf("%v", value)
@@ -92,13 +100,13 @@ func go2SqlDataType(value interface{}) (string, string) {
 	case []byte:
 		{
 			b, _ := value.([]byte)
-			return fmt.Sprintf("varbinary (%d)", len(b)),
+			return fmt.Sprintf("varbinary (%d)", max(1, len(b))),
 				fmt.Sprintf("0x%x", b)
 		}
 	default:
 		log.Printf("unknown dataType %t", t)
 	}
-	return fmt.Sprintf("nvarchar (%d)", len(strValue)),
+	return fmt.Sprintf("nvarchar (%d)", max(1, len(strValue))),
 		fmt.Sprintf("'%s'", quote(strValue))
 
 }
