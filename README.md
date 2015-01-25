@@ -57,8 +57,7 @@ Which is all supported by FreeTDS and of course by gofreetds.
 
 Connect:
 ```go
-//create connection pool (for max. 100 connections)
-pool, err := freetds.NewConnPool("user=ianic;pwd=ianic;database=pubs;host=iow", 100)
+pool, err := freetds.NewConnPool("user=ianic;pwd=ianic;database=pubs;host=iow")
 defer pool.Close()
 ...
 //get connection
@@ -97,7 +96,24 @@ Executing arbitrary sql is supported with Exec or ExecuteSql.
 
 Execute query:
 ```go
-rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
+rst,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ err := conn.Exec("select au_id, au_lname, au_fname from authors")
 ```
 Rst is array of results.
 Each result has Columns and Rows array.

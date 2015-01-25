@@ -40,7 +40,7 @@ type ConnPool struct {
 
 //NewCoonPool creates new connection pool.
 //Connection will be created using provided connection string.
-//MaxConn is max number of connections in the pool.
+//Max number of connections in the pool is controlled by max_pool_size connection string parameter, default is 100.
 //
 //New connections will be created when needed.
 //There is always one connection in the pool.
@@ -48,6 +48,7 @@ type ConnPool struct {
 //Returns err if fails to create initial connection.
 //Valid connection string examples:
 //   "host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;"
+//   "host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;max_pool_size=500"
 //   "host=myServerA;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror"
 func NewConnPool(connStr string) (*ConnPool, error) {
 	p := &ConnPool{
