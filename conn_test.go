@@ -2,11 +2,12 @@ package freetds
 
 import (
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchrcom/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`
@@ -75,43 +76,26 @@ func IsMirrorHostDefined() bool {
 
 func TestConnect(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	if conn == nil {
-		return
-	}
+	assert.NotNil(t, conn)
 	defer conn.Close()
-	if !conn.isLive() {
-		t.Error()
-	}
-	if conn.isDead() {
-		t.Error()
-	}
+	assert.True(t, conn.isLive())
+	assert.False(t, conn.isDead())
 }
 
 func TestItIsSafeToCloseFailedConnection(t *testing.T) {
 	conn := new(Conn)
-	if conn == nil {
-		return
-	}
-	if conn.isLive() {
-		t.Error()
-	}
-	if !conn.isDead() {
-		t.Error()
-	}
-	conn.Close()
+	assert.NotNil(t, conn)
+	assert.False(t, conn.isLive())
+	assert.True(t, conn.isDead())
 }
 
 func TestCreateTable(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	if conn == nil {
-		return
-	}
+	assert.NotNil(t, conn)
 	defer conn.Close()
 	for _, s := range CREATE_DB_SCRIPTS {
 		_, err := conn.Exec(s)
-		if err != nil {
-			t.Error(err)
-		}
+		assert.Nil(t, err)
 	}
 }
 
@@ -153,20 +137,15 @@ func TestRetryOnKilledConnection(t *testing.T) {
 
 	pid1, _ := conn1.SelectValue("select @@spid")
 	conn2.Exec(fmt.Sprintf("kill %d", pid1))
-	if conn1.isLive() {
-		t.Error()
-	}
-	if !conn1.isDead() {
-		t.Error()
-	}
+	assert.False(t, conn1.isLive())
+	assert.True(t, conn1.isDead())
 	_, err := conn1.exec("select * from authors")
-	if err == nil {
-		t.Error()
-	}
+	assert.NotNil(t, err)
 	rst, err := conn1.Exec("select * from authors")
-	if err != nil || len(rst) != 1 || len(rst[0].Rows) != 23 || rst[0].RowsAffected != 23 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 23, len(rst[0].Rows))
+	assert.Equal(t, 23, rst[0].RowsAffected)
 }
 
 func TestExecute(t *testing.T) {
@@ -177,24 +156,22 @@ func TestExecute(t *testing.T) {
 	defer conn.Close()
 
 	rst, err := conn.Exec("select 1")
-	if rst == nil || err != nil {
-		t.Error()
-	}
-	if len(rst) != 1 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 1, len(rst))
 	rst, err = conn.Exec("select missing")
-	if rst != nil || err == nil {
-		t.Error()
-	}
+	assert.NotNil(t, err)
+	assert.Nil(t, rst)
 	rst, err = conn.Exec("print 'pero'")
-	if err != nil || !strings.Contains(conn.Message, "pero") || len(rst) != 1 || len(rst[0].Rows) > 0 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.True(t, strings.Contains(conn.Message, "pero"))
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 0, len(rst[0].Rows))
 	rst, err = conn.Exec("sp_help 'authors'")
-	if err != nil || len(rst) != 9 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 9, len(rst))
 }
 
 func TestRowsAffected(t *testing.T) {
@@ -205,14 +182,18 @@ func TestRowsAffected(t *testing.T) {
 	defer conn.Close()
 
 	rst, err := conn.Exec("select * from authors")
-	if err != nil || len(rst) != 1 || len(rst[0].Rows) != 23 || rst[0].RowsAffected != 23 {
-		t.Error()
-	}
-	rst, err = conn.Exec("update authors set zip = zip")
-	if err != nil || len(rst) != 1 || len(rst[0].Rows) > 0 || rst[0].RowsAffected != 23 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 23, len(rst[0].Rows))
+	assert.Equal(t, 23, rst[0].RowsAffected)
 
+	rst, err = conn.Exec("update authors set zip = zip")
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 0, len(rst[0].Rows))
+	assert.Equal(t, 23, rst[0].RowsAffected)
 }
 
 func TestSelectValue(t *testing.T) {
@@ -223,17 +204,16 @@ func TestSelectValue(t *testing.T) {
 	defer conn.Close()
 
 	val, err := conn.SelectValue("select 1")
-	if val.(int32) != 1 || err != nil {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.Equal(t, 1, val)
+
 	val, err = conn.SelectValue("select 1 where 1=2")
-	if val != nil || err == nil {
-		t.Error()
-	}
+	assert.NotNil(t, err)
+	assert.Nil(t, val)
+
 	val, err = conn.SelectValue("select missing")
-	if val != nil || err == nil {
-		t.Error()
-	}
+	assert.NotNil(t, err)
+	assert.Nil(t, val)
 }
 
 func TestDbUse(t *testing.T) {
@@ -244,14 +224,12 @@ func TestDbUse(t *testing.T) {
 	defer conn.Close()
 
 	err := conn.DbUse()
-	if err != nil {
-		t.Error()
-	}
+	assert.Nil(t, err)
+
 	conn.database = "missing"
 	err = conn.DbUse()
-	if err == nil && !strings.Contains(err.Error(), "unable to use database missing") {
-		t.Error()
-	}
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "unable to use database missing"))
 }
 
 func TestMirroring(t *testing.T) {
@@ -265,18 +243,23 @@ func TestMirroring(t *testing.T) {
 	defer conn.Close()
 
 	rst, err := conn.Exec("select * from authors")
-	if err != nil && rst != nil && len(rst) == 1 && len(rst[0].Rows) == 23 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 23, len(rst[0].Rows))
+	assert.Equal(t, 23, rst[0].RowsAffected)
+
 	err = failover(conn)
 	if err != nil {
 		fmt.Printf("failover error %s %s %s\n", err, conn.Error, conn.Message)
-		t.Error()
+		assert.Nil(t, err)
 	}
 	rst, err = conn.Exec("select * from authors")
-	if err != nil && rst != nil && len(rst) == 1 && len(rst[0].Rows) == 23 {
-		t.Error()
-	}
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	assert.Equal(t, 1, len(rst))
+	assert.Equal(t, 23, len(rst[0].Rows))
+	assert.Equal(t, 23, rst[0].RowsAffected)
 }
 
 func failover(conn *Conn) error {
@@ -378,4 +361,15 @@ func printResults(results []*Result) {
 		fmt.Printf("rows affected: %d\n", r.RowsAffected)
 		fmt.Printf("return value: %d\n", r.ReturnValue)
 	}
+}
+
+func TestWrongPassword(t *testing.T) {
+	connStr := testDbConnStr(1)
+	c := NewCredentials(connStr)
+	c.pwd = c.pwd + "_wrong"
+	conn, err := connectWithCredentials(c)
+	assert.NotNil(t, err)
+	assert.Nil(t, conn)
+	assert.True(t, strings.Contains(err.Error(), "Login failed for user"))
+	//t.Logf("wrong password message: %s", err)
 }

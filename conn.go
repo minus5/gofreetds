@@ -172,9 +172,13 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	defer C.free(unsafe.Pointer(chost))
 	dbproc := C.dbopen(login, chost)
 	if dbproc == nil {
-		return nil, errors.New("dbopen error")
+		return nil, dbProcError("dbopen error")
 	}
 	return dbproc, nil
+}
+
+func dbProcError(msg string) error {
+	return fmt.Errorf("%s\n%s\n%s", msg, lastError, lastMessage)
 }
 
 //Change database.

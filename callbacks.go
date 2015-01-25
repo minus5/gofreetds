@@ -10,6 +10,8 @@ import (
 */
 import "C"
 
+var lastError, lastMessage string
+
 //export errHandler
 func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserrstr *C.char) C.int {
 	var err string
@@ -23,6 +25,7 @@ func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
 	}
 	err += fmt.Sprintf("\n%s\n\n", C.GoString(dberrstr))
 
+	lastError = err
 	conn := connections[int64(dbprocAddr)]
 	if conn != nil {
 		conn.addError(err)
@@ -59,6 +62,7 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 	}
 	msg += fmt.Sprintf("%s\n", C.GoString(msgtext))
 
+	lastMessage = msg
 	conn := connections[int64(dbprocAddr)]
 	if conn != nil {
 		conn.addMessage(msg)
