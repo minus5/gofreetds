@@ -1,9 +1,10 @@
 package freetds
 
 import (
-	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchrcom/testify/assert"
 )
 
 func TestGoTo2SqlDataType2(t *testing.T) {
@@ -69,6 +70,10 @@ func TestGoTo2SqlDataType(t *testing.T) {
 	checker(tm, "nvarchar (25)", "'2006-01-02T23:04:05+01:00'")
 
 	checker([]byte{1, 2, 3, 4, 5, 6, 7, 8}, "varbinary (8)", "0x0102030405060708")
+
+	checker("", "nvarchar (1)", "''")
+	checker(true, "bit", "1")
+	checker(false, "bit", "0")
 }
 
 func TestExecuteSqlNumberOfParams(t *testing.T) {
