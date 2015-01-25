@@ -75,9 +75,14 @@ func go2SqlDataType(value interface{}) (string, string) {
 		return b
 	}
 
-	//TODO - bool value
 	strValue := fmt.Sprintf("%v", value)
 	switch t := value.(type) {
+	case bool:
+		bitStrValue := "0"
+		if strValue == "true" {
+			bitStrValue = "1"
+		}
+		return "bit", bitStrValue
 	case uint8, int8:
 		return "tinyint", strValue
 	case uint16, int16:
