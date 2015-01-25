@@ -67,15 +67,14 @@ func quote(in string) string {
 	return strings.Replace(in, "'", "''", -1)
 }
 
-func max(a int, b int) int {
-	if a > b {
-		return a
+func go2SqlDataType(value interface{}) (string, string) {
+	max := func(a int, b int) int {
+		if a > b {
+			return a
+		}
+		return b
 	}
 
-	return b
-}
-
-func go2SqlDataType(value interface{}) (string, string) {
 	//TODO - bool value
 	strValue := fmt.Sprintf("%v", value)
 	switch t := value.(type) {
