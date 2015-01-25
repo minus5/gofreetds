@@ -2,7 +2,6 @@ package freetds
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -20,7 +19,7 @@ const statusRow string = `;
 func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
-		return nil, errors.New(fmt.Sprintf("Incorect number of params, expecting %d got %d", numParams, len(params)))
+		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
 	}
 	paramDef, paramVal := parseParams(params...)
 	statement += statusRow
