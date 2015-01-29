@@ -107,7 +107,7 @@ func go2SqlDataType(value interface{}) (string, string) {
 				fmt.Sprintf("0x%x", b)
 		}
 	default:
-		log.Printf("unknown dataType %t", t)
+		log.Printf("unknown dataType %T", t)
 	}
 	return fmt.Sprintf("nvarchar (%d)", max(1, len(strValue))),
 		fmt.Sprintf("'%s'", quote(strValue))
