@@ -30,7 +30,11 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	//without this GC could remove something used later in C, and we will get SIGSEG
 	refHolder := make([]*[]byte, 0)
 	conn.clearMessages()
-	if C.dbrpcinit(conn.dbproc, C.CString(spName), 0) == C.FAIL {
+
+	name := C.CString(spName)
+	defer C.free(unsafe.Pointer(name))
+
+	if C.dbrpcinit(conn.dbproc, name, 0) == C.FAIL {
 		return nil, conn.raiseError("dbrpcinit failed")
 	}
 	//input params

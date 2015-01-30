@@ -253,7 +253,11 @@ func (conn *Conn) switchMirror() {
 
 func (conn *Conn) exec(sql string) ([]*Result, error) {
 	conn.clearMessages()
-	if C.dbcmd(conn.dbproc, C.CString(sql)) == C.FAIL {
+
+	cmd := C.CString(sql)
+	defer C.free(unsafe.Pointer(cmd))
+
+	if C.dbcmd(conn.dbproc, cmd) == C.FAIL {
 		return nil, conn.raiseError("dbcmd failed")
 	}
 	if C.dbsqlexec(conn.dbproc) == C.FAIL {
