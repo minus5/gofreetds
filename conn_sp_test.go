@@ -78,6 +78,7 @@ func TestExecSpInputParams2(t *testing.T) {
 	wantp2 := "abc"
 	wantp3 := "šđčćžabc"
 	wantp4 := "šđčćžabcde"
+	wantp3 = "FK Ventspils v Nõmme Kalju FC"
 	wantp5 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3, wantp4, wantp5)
 	assert.Nil(t, err)

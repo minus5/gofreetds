@@ -96,24 +96,7 @@ Executing arbitrary sql is supported with Exec or ExecuteSql.
 
 Execute query:
 ```go
-rst,
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- err := conn.Exec("select au_id, au_lname, au_fname from authors")
+rst, err := conn.Exec("select au_id, au_lname, au_fname from authors")
 ```
 Rst is array of results.
 Each result has Columns and Rows array.
