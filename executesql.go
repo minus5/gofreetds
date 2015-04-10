@@ -97,8 +97,8 @@ func go2SqlDataType(value interface{}) (string, string) {
 		}
 	case time.Time:
 		{
-			t, _ := value.(time.Time)
-			strValue = t.Format(time.RFC3339)
+			strValue = t.Format(time.RFC3339Nano)
+			return "datetimeoffset", fmt.Sprintf("'%s'", quote(strValue))
 		}
 	case []byte:
 		{
