@@ -80,6 +80,7 @@ func TestExecuteSqlNumberOfParams(t *testing.T) {
 	c := &Conn{}
 	_, err := c.ExecuteSql("select 1 from foo where 1 = ? and 2 = ? and 3 = ?", 1, 2)
 	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Incorrect number of params")
 }
 
 func TestParseParams(t *testing.T) {
