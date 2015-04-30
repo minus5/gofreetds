@@ -25,7 +25,7 @@ func TestGoTo2SqlDataType2(t *testing.T) {
 	checker("iso medo isn't", "nvarchar (14)", "'iso medo isn''t'")
 
 	tm := time.Unix(1136239445, 0)
-	checker(tm, "nvarchar (25)", "'2006-01-02T23:04:05+01:00'")
+	checker(tm, "datetimeoffset", "'2006-01-02T23:04:05+01:00'")
 
 	checker([]byte{1, 2, 3, 4, 5, 6, 7, 8}, "varbinary (8)", "0x0102030405060708")
 
@@ -67,7 +67,7 @@ func TestGoTo2SqlDataType(t *testing.T) {
 	checker("iso medo isn't", "nvarchar (14)", "'iso medo isn''t'")
 
 	tm := time.Unix(1136239445, 0)
-	checker(tm, "nvarchar (25)", "'2006-01-02T23:04:05+01:00'")
+	checker(tm, "datetimeoffset", "'2006-01-02T23:04:05+01:00'")
 
 	checker([]byte{1, 2, 3, 4, 5, 6, 7, 8}, "varbinary (8)", "0x0102030405060708")
 
