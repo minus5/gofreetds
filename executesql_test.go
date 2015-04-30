@@ -88,3 +88,9 @@ func TestParseParams(t *testing.T) {
 	assert.Equal(t, def, "@p1 int, @p2 int, @p3 nvarchar (4)")
 	assert.Equal(t, val, "@p1=1, @p2=2, @p3='pero'")
 }
+
+func TestExecuteSqlDatetime(t *testing.T) {
+	c := ConnectToTestDb(t)
+	_, err := c.ExecuteSql("select top 1 datetime from dbo.freetds_types where datetime < ?", time.Now())
+	assert.Nil(t, err)
+}
