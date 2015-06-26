@@ -373,3 +373,25 @@ func TestWrongPassword(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "Login failed for user"))
 	//t.Logf("wrong password message: %s", err)
 }
+
+func TestLockTimeout(t *testing.T) {
+	connStr := testDbConnStr(1)
+	c := NewCredentials(connStr)
+	c.lockTimeout = 100
+	conn, err := connectWithCredentials(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, conn)
+
+	conn2, err := connectWithCredentials(c)
+	assert.Nil(t, err)
+	assert.NotNil(t, conn2)
+
+	go func() {
+		_, err := conn.Exec("begin transaction; update authors set phone = phone; waitfor delay '00:00:01'; commit transaction")
+		assert.Nil(t, err)
+	}()
+	time.Sleep(1e8)
+	_, err = conn2.Exec("begin transaction; update authors set phone = phone; commit transaction")
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "Lock request time out period exceeded."))
+}

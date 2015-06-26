@@ -7,7 +7,7 @@ import (
 
 type credentials struct {
 	user, pwd, host, database, mirrorHost string
-	maxPoolSize                           int
+	maxPoolSize, lockTimeout              int
 }
 
 func NewCredentials(connStr string) *credentials {
@@ -33,7 +33,12 @@ func NewCredentials(connStr string) *credentials {
 				if i, err := strconv.Atoi(value); err == nil {
 					crd.maxPoolSize = i
 				}
+			case "lock timeout", "lock_timeout":
+				if i, err := strconv.Atoi(value); err == nil {
+					crd.lockTimeout = i
+				}
 			}
+
 		}
 	}
 	return crd

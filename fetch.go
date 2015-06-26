@@ -2,7 +2,7 @@ package freetds
 
 import (
 	"errors"
-//	"fmt"
+	//	"fmt"
 )
 
 /*
@@ -23,7 +23,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			break
 		}
 		if erc == C.FAIL {
-			return nil, errors.New("dbresults failed")
+			return nil, conn.raise(errors.New("dbresults failed"))
 		}
 		result := NewResult()
 		conn.currentResult = result
@@ -136,7 +136,7 @@ func dbbindtype(datatype C.int) (C.int, C.int) {
 		return C.MONEYBIND, datatype
 	case C.SYBMONEY4:
 		return C.SMALLMONEYBIND, datatype
-	case SYBUNIQUE: 
+	case SYBUNIQUE:
 		return C.STRINGBIND, C.SYBCHAR
 	}
 	//TODO - log unknown datatype

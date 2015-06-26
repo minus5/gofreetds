@@ -352,5 +352,11 @@ func (conn *Conn) setDefaults() error {
     set ansi_padding on
     set concat_null_yields_null on
    `)
+	if err != nil {
+		return err
+	}
+	if t := conn.credentials.lockTimeout; t > 0 {
+		_, err = conn.exec(fmt.Sprintf("set lock_timeout %d", t))
+	}
 	return err
 }

@@ -92,7 +92,12 @@ func (p *ConnPool) Get() (*Conn, error) {
 	if conn != nil {
 		return conn, nil
 	}
-	return p.newConn()
+	conn, err := p.newConn()
+	if err != nil {
+		<-p.poolGuard //remove reservation
+		return nil, err
+	}
+	return conn, nil
 }
 
 //Get connection from pool and execute handler.
