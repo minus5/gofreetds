@@ -42,7 +42,7 @@ const (
 	SYBNUMERIC = 108
 	SYBDECIMAL = 106
 
-	SYBUNIQUE = 36    //uniqueidentifier string
+	SYBUNIQUE = 36 //uniqueidentifier string
 )
 
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -188,7 +188,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			_, of := tm.Zone()
 			diff += int64(time.Duration(of) * time.Second)
 			days := int32(diff / 1e9 / 60 / 60 / 24)
-			secs := uint32(float64(diff - int64(days) * 1e9 * 60 * 60 * 24) * 0.0000003)
+			secs := uint32(float64(diff-int64(days)*1e9*60*60*24) * 0.0000003)
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, secs)
@@ -203,7 +203,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			_, of := tm.Zone()
 			diff += int64(of)
 			days := uint16(diff / 60 / 60 / 24)
-			mins := uint16((diff - int64(days) * 60 * 60 * 24) / 60)
+			mins := uint16((diff - int64(days)*60*60*24) / 60)
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, mins)
@@ -219,7 +219,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			err = errors.New(fmt.Sprintf("Could not convert %T to []byte.", value))
 		}
 	default:
-		if str, ok := value.(string); ok { 
+		if str, ok := value.(string); ok {
 			if str == "" {
 				//dbrpcparam treats any data with datalen 0 as NULL value
 				//(rpc.c line 241 in freetds)
@@ -229,8 +229,11 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 				//  https://github.com/pymssql/pymssql/issues/243
 				//  http://stackoverflow.com/questions/2025585/len-function-not-including-trailing-spaces-in-sql-server
 				str = " "
+				data = []byte{32}
+				return
 			}
 			data = []byte(str)
+
 			if datatype == XSYBNVARCHAR || datatype == XSYBNCHAR {
 				//FIXME - adding len bytes to the end of the buf
 				//        realy don't understand why this is necessary

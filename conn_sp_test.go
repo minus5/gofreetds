@@ -74,11 +74,11 @@ func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10) as select @p1, @p2, @p3, @p4, @p5;  return")
 	assert.Nil(t, err)
-	want := "£¢§‹›†€"
+	want := "£¢§‹›†€ ✓"
 	wantp2 := "abc"
-	wantp3 := "šđčćžabc"
-	wantp4 := "šđčćžabcde"
-	wantp3 = "FK Ventspils v Nõmme Kalju FC"
+	//wantp3 := "FK Ventspils v Nõmme Kalju FC ✓"
+	wantp3 := "" //test empty string
+	wantp4 := "šđčćžabcd✓"
 	wantp5 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3, wantp4, wantp5)
 	assert.Nil(t, err)
