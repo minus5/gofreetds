@@ -62,7 +62,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 		}
 		//set parametar valus, call dbrpcparam
 		if i < len(params) || spParam.IsOutput {
-			maxOutputSize := C.DBINT(0)
+			maxOutputSize := C.DBINT(-1)
 			status := C.BYTE(0)
 			if spParam.IsOutput {
 				status = C.DBRPCRETURN
