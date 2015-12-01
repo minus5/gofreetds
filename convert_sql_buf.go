@@ -228,7 +228,6 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 				//Links:
 				//  https://github.com/pymssql/pymssql/issues/243
 				//  http://stackoverflow.com/questions/2025585/len-function-not-including-trailing-spaces-in-sql-server
-				str = " "
 				data = []byte{32}
 				return
 			}
