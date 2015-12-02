@@ -1,9 +1,10 @@
 package freetds
 
 import (
-	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchrcom/testify/assert"
 )
 
 func TestInt(t *testing.T) {
@@ -14,7 +15,7 @@ func TestInt(t *testing.T) {
 	testToSqlToType(t, SYBINT4, int32(2147483647))
 	testToSqlToType(t, SYBINT4, int64(2147483647))
 
-	_, err := typeToSqlBuf(SYBINT4, "pero")
+	_, _, err := typeToSqlBuf(SYBINT4, "pero", false)
 	assert.NotNil(t, err)
 }
 
@@ -23,19 +24,19 @@ func TestInt16(t *testing.T) {
 	testToSqlToType(t, SYBINT2, int16(-32768))
 	testToSqlToType(t, SYBINT2, 123)
 	//overflow
-	data, err := typeToSqlBuf(SYBINT2, 32768)
+	data, _, err := typeToSqlBuf(SYBINT2, 32768, false)
 	assert.Nil(t, err)
 	i16 := sqlBufToType(SYBINT2, data)
 	assert.Equal(t, i16, -32768)
 	//error
-	_, err = typeToSqlBuf(SYBINT2, "pero")
+	_, _, err = typeToSqlBuf(SYBINT2, "pero", false)
 	assert.NotNil(t, err)
 }
 
 func TestInt8(t *testing.T) {
 	testToSqlToType(t, SYBINT1, uint8(127))
 	testToSqlToType(t, SYBINT1, uint8(255))
-	data, err := typeToSqlBuf(SYBINT1, 127)
+	data, _, err := typeToSqlBuf(SYBINT1, 127, false)
 	assert.Nil(t, err)
 	value, _ := sqlBufToType(SYBINT1, data).(uint8)
 	assert.Equal(t, int(value), 127)
@@ -66,9 +67,9 @@ func TestMoney(t *testing.T) {
 }
 
 func TestTime(t *testing.T) {
-	f := func(value time.Time) { 
+	f := func(value time.Time) {
 		typ := SYBDATETIME
-		data, err := typeToSqlBuf(typ, value)
+		data, _, err := typeToSqlBuf(typ, value, false)
 		assert.Nil(t, err)
 		value2 := sqlBufToType(typ, data)
 		value2t, _ := value2.(time.Time)
@@ -86,7 +87,7 @@ func TestTime(t *testing.T) {
 func TestTime4(t *testing.T) {
 	f := func(value time.Time) {
 		typ := SYBDATETIME4
-		data, err := typeToSqlBuf(typ, value)
+		data, _, err := typeToSqlBuf(typ, value, false)
 		assert.Nil(t, err)
 		value2 := sqlBufToType(typ, data)
 		value2t, _ := value2.(time.Time)
@@ -104,7 +105,7 @@ func TestBinary(t *testing.T) {
 }
 
 func testToSqlToType(t *testing.T, typ int, value interface{}) {
-	data, err := typeToSqlBuf(typ, value)
+	data, _, err := typeToSqlBuf(typ, value, false)
 	assert.Nil(t, err)
 	value2 := sqlBufToType(typ, data)
 	assert.Equal(t, value, value2)

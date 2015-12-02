@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -119,7 +120,8 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 	}
 }
 
-func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
+func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (data []byte, datalen int, err error) {
+	datalen = -1
 	buf := new(bytes.Buffer)
 	switch datatype {
 	case SYBINT1:
@@ -159,6 +161,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 			} else {
 				data = []byte{0}
 			}
+			datalen = 1
 			return
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to bool.", value))
@@ -214,6 +217,7 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 	case SYBIMAGE, SYBVARBINARY, SYBBINARY, XSYBVARBINARY:
 		if buf, ok := value.([]byte); ok {
 			data = append(buf, []byte{0}[0])
+			datalen = len(data)
 			return
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to []byte.", value))
@@ -229,17 +233,17 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 				//  https://github.com/pymssql/pymssql/issues/243
 				//  http://stackoverflow.com/questions/2025585/len-function-not-including-trailing-spaces-in-sql-server
 				data = []byte{32}
+				datalen = 1
 				return
 			}
 			data = []byte(str)
-
-			if datatype == XSYBNVARCHAR || datatype == XSYBNCHAR {
-				//FIXME - adding len bytes to the end of the buf
-				//        realy don't understand why this is necessary
-				//        come to this solution by try and error
-				l := len(data)
-				for i := 0; i < l; i++ {
-					data = append(data, byte(0))
+			datalen = len(data)
+			//set datalen for nvarchar and nchar datatypes
+			if (datatype == XSYBNCHAR) ||
+				(datatype == XSYBNVARCHAR && !freetdsVersionGte095) {
+				runelen := utf8.RuneCountInString(str)
+				if runelen*2 > len(data) {
+					datalen = runelen * 2
 				}
 			}
 			return
@@ -248,5 +252,6 @@ func typeToSqlBuf(datatype int, value interface{}) (data []byte, err error) {
 		}
 	}
 	data = buf.Bytes()
+	datalen = len(data)
 	return
 }

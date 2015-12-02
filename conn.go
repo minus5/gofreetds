@@ -4,6 +4,8 @@ package freetds
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"unsafe"
 	//	"log"
@@ -65,6 +67,7 @@ type Conn struct {
 	belongsToPool   *ConnPool
 	spParamsCache   map[string][]*spParam
 	credentials
+	freetdsVersionGte095 bool
 }
 
 func (conn *Conn) addMessage(msg string) {
@@ -174,7 +177,14 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	if dbproc == nil {
 		return nil, dbProcError("dbopen error")
 	}
+	conn.readFreeTdsVersion()
 	return dbproc, nil
+}
+
+func (conn *Conn) readFreeTdsVersion() {
+	dbVersion := C.GoString(C.dbversion())
+	freeTdsVersion := parseFreeTdsVersion(dbVersion)
+	conn.setFreetdsVersionGte095(freeTdsVersion)
 }
 
 func dbProcError(msg string) error {
@@ -349,7 +359,7 @@ func (conn *Conn) setDefaults() error {
 	_, err := conn.exec(`
     set quoted_identifier on
     set ansi_warnings on
-    set ansi_padding on
+    set ansi_padding off
     set concat_null_yields_null on
    `)
 	if err != nil {
@@ -359,4 +369,32 @@ func (conn *Conn) setDefaults() error {
 		_, err = conn.exec(fmt.Sprintf("set lock_timeout %d", t))
 	}
 	return err
+}
+
+func (conn *Conn) setFreetdsVersionGte095(freeTdsVersion []int) {
+	//log.Printf("version %v", conn.freeTdsVersion)
+	conn.freetdsVersionGte095 = false
+	if len(freeTdsVersion) >= 2 {
+		if freeTdsVersion[0] > 0 ||
+			freeTdsVersion[0] == 0 && freeTdsVersion[1] >= 95 {
+			conn.freetdsVersionGte095 = true
+		}
+	}
+}
+
+func parseFreeTdsVersion(dbVersion string) []int {
+	rxFreeTdsVersion := regexp.MustCompile(`v(\d+).(\d+).(\d+)`)
+	//log.Println("FreeTDS Version: ", dbVersion)
+	freeTdsVersion := make([]int, 0)
+	versionMatch := rxFreeTdsVersion.FindStringSubmatch(dbVersion)
+	if len(versionMatch) == 4 {
+		for v, ver := range versionMatch {
+			if v > 0 {
+				if num, err := strconv.Atoi(ver); err == nil {
+					freeTdsVersion = append(freeTdsVersion, num)
+				}
+			}
+		}
+	}
+	return freeTdsVersion
 }

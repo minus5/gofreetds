@@ -49,7 +49,8 @@ if exists(select * from sys.procedures where name = 'freetds_return_value')
   drop procedure freetds_return_value
 `, `
 create procedure freetds_return_value as
-  return -5`}
+  return -5`,
+}
 
 func ConnectToTestDb(t *testing.T) *Conn {
 	conn, err := NewConn(testDbConnStr(1))
@@ -394,4 +395,23 @@ func TestLockTimeout(t *testing.T) {
 	_, err = conn2.Exec("begin transaction; update authors set phone = phone; commit transaction")
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "Lock request time out period exceeded."))
+}
+
+func TestParseFreeTdsVersion(t *testing.T) {
+	data := []struct {
+		version  string
+		expected []int
+	}{
+		{"", []int{}},
+		{" freetds 0.95.19 ", []int{}},
+		{" freetds v0.95.19 ", []int{0, 95, 19}},
+		{" freetds v0.96.01 ", []int{0, 96, 1}},
+		{" freetds v1.01.02 ", []int{1, 1, 2}},
+		{"  $Id: dblib.c,v 1.378.2.4 2011-06-07 08:52:29 freddy77 Exp $", []int{}},
+		{" freetds v0.a.b ", []int{}},
+		{" freetds v0.96.0.rc ", []int{0, 96, 0}},
+	}
+	for _, d := range data {
+		assert.Equal(t, d.expected, parseFreeTdsVersion(d.version))
+	}
 }

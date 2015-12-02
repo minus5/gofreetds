@@ -45,16 +45,16 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 	for i, spParam := range spParams {
 		//get datavalue for the suplied stored procedure parametar
 		var datavalue *C.BYTE
-		datalen := C.DBINT(0)
+		datalen := 0
 		if i < len(params) {
 			param := params[i]
 			if param != nil {
-				data, err := typeToSqlBuf(int(spParam.UserTypeId), param)
+				data, sqlDatalen, err := typeToSqlBuf(int(spParam.UserTypeId), param, conn.freetdsVersionGte095)
 				if err != nil {
 					return nil, err
 				}
 				if len(data) > 0 {
-					datalen = C.DBINT(len(data))
+					datalen = sqlDatalen
 					datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
 					refHolder = append(refHolder, &data)
 				}
@@ -71,7 +71,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			paramname := C.CString(spParam.Name)
 			defer C.free(unsafe.Pointer(paramname))
 			if C.dbrpcparam(conn.dbproc, paramname, status,
-				C.int(spParam.UserTypeId), maxOutputSize, datalen, datavalue) == C.FAIL {
+				C.int(spParam.UserTypeId), maxOutputSize, C.DBINT(datalen), datavalue) == C.FAIL {
 				return nil, errors.New("dbrpcparam failed")
 			}
 		}

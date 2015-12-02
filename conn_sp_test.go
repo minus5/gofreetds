@@ -72,31 +72,38 @@ func TestExecSpInputParamsTypes(t *testing.T) {
 
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_input_params2", "@p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10) as select @p1, @p2, @p3, @p4, @p5;  return")
+	err := createProcedure(conn, "test_input_params2", `
+  @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10), @p6 as nvarchar(255) as 
+  select @p1, @p2, @p3, @p4, @p5, @p6
+  if exists(select * from sys.tables where name = 'tbl_test_input_params2')
+     drop table tbl_test_input_params2
+  select @p1 p1, @p2 p2, @p3 p3, @p4 p4, @p5 p5, @p6 p6 into tbl_test_input_params2
+  return`)
 	assert.Nil(t, err)
 	want := "£¢§‹›†€ ✓"
 	wantp2 := "abc"
-	//wantp3 := "FK Ventspils v Nõmme Kalju FC ✓"
 	wantp3 := "" //test empty string
 	wantp4 := "šđčćžabcd✓"
 	wantp5 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3, wantp4, wantp5)
+	wantp6 := "Mark"
+	rst, err := conn.ExecSp("test_input_params2", want, wantp2, wantp3, wantp4, wantp5, wantp6)
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
 	if rst == nil {
 		return
 	}
 	assert.True(t, rst.HasResults())
-	var got, gotp2, gotp3, gotp4 string
+	var got, gotp2, gotp3, gotp4, gotp6 string
 	var gotp5 []byte
 	result := rst.results[0]
 	result.Next()
-	result.Scan(&got, &gotp2, &gotp3, &gotp4, &gotp5)
+	result.Scan(&got, &gotp2, &gotp3, &gotp4, &gotp5, &gotp6)
 	assert.Equal(t, want, got)
 	assert.Equal(t, wantp2, gotp2)
 	assert.Equal(t, wantp3, gotp3)
 	assert.Equal(t, wantp4, gotp4)
 	assert.Equal(t, wantp5, gotp5)
+	assert.Equal(t, wantp6, gotp6)
 	//PrintResults(rst.Results)
 }
 
