@@ -48,6 +48,10 @@ const (
 
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 
+// These are exported from the package for convenience
+var SqlMinTime = time.Date(1753, 01, 01, 00, 00, 00, 000, time.UTC)
+var SqlMaxTime = time.Date(9999, 12, 31, 23, 59, 59, 997, time.UTC)
+
 func toLocalTime(value time.Time) time.Time {
 	value = value.In(time.Local)
 	_, of := value.Zone()
@@ -186,12 +190,24 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 	case SYBDATETIME:
 		//database time is always in local timezone
 		if tm, ok := value.(time.Time); ok {
-			tm = tm.Local()
-			diff := tm.UnixNano() - sqlStartTime.UnixNano()
-			_, of := tm.Zone()
-			diff += int64(time.Duration(of) * time.Second)
-			days := int32(diff / 1e9 / 60 / 60 / 24)
-			secs := uint32(float64(diff-int64(days)*1e9*60*60*24) * 0.0000003)
+			var days int32
+			var secs uint32
+
+			if tm.Equal(SqlMaxTime) {
+				// Skip the math and just use constants for SQL Max Time
+				days = 2958463
+				secs = 25919999
+			} else if tm.Equal(SqlMinTime) {
+				days = -53690
+				secs = 0
+			} else {
+				tm = tm.Local()
+				diff := tm.UnixNano() - sqlStartTime.UnixNano()
+				_, of := tm.Zone()
+				diff += int64(time.Duration(of) * time.Second)
+				days = int32(diff / 1e9 / 60 / 60 / 24)
+				secs = uint32(float64(diff-int64(days)*1e9*60*60*24) * 0.0000003)
+			}
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, secs)
