@@ -82,7 +82,7 @@ func TestTime(t *testing.T) {
 	f(time.Now().UTC())
 	f(time.Unix(1404856800, 0))
 	f(time.Unix(1404856800, 0).UTC())
-	// f(SqlMaxTime) can't test.
+	f(SqlMaxTime)
 	f(SqlMinTime)
 }
 

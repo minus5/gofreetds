@@ -48,9 +48,15 @@ const (
 
 var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
 
-// These are exported from the package for convenience
 var SqlMinTime = time.Date(1753, 01, 01, 00, 00, 00, 000, time.UTC)
+
+const sqlMaxTimeDays int32 = 2958463
+const sqlMaxTimeSec uint32 = 25919999
+
 var SqlMaxTime = time.Date(9999, 12, 31, 23, 59, 59, 997, time.UTC)
+
+const sqlMinTimeDays int32 = -53690
+const sqlMinTimeSec uint32 = 0
 
 func toLocalTime(value time.Time) time.Time {
 	value = value.In(time.Local)
@@ -83,8 +89,12 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 		var sec uint32 /* 300ths of a second since midnight */
 		binary.Read(buf, binary.LittleEndian, &days)
 		binary.Read(buf, binary.LittleEndian, &sec)
-		value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
-		return toLocalTime(value)
+		if days == sqlMaxTimeDays && sec == sqlMaxTimeSec {
+			return toLocalTime(SqlMaxTime)
+		} else {
+			value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
+			return toLocalTime(value)
+		}
 	case SYBDATETIME4:
 		var days uint16 /* number of days since 1/1/1900 */
 		var mins uint16 /* number of minutes since midnight */
@@ -193,13 +203,13 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 			var days int32
 			var secs uint32
 
+			// Skip the math and just use constants for SQL Max or Min Time
 			if tm.Equal(SqlMaxTime) {
-				// Skip the math and just use constants for SQL Max Time
-				days = 2958463
-				secs = 25919999
+				days = sqlMaxTimeDays
+				secs = sqlMaxTimeSec
 			} else if tm.Equal(SqlMinTime) {
-				days = -53690
-				secs = 0
+				days = sqlMinTimeDays
+				secs = sqlMinTimeSec
 			} else {
 				tm = tm.Local()
 				diff := tm.UnixNano() - sqlStartTime.UnixNano()
