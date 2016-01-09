@@ -176,11 +176,11 @@ func (p *ConnPool) Close() {
 }
 
 func (p *ConnPool) cleanup() {
+	p.poolMutex.Lock()
+	defer p.poolMutex.Unlock()
 	if len(p.pool) <= 1 {
 		return
 	}
-	p.poolMutex.Lock()
-	defer p.poolMutex.Unlock()
 	for i := len(p.pool) - 2; i >= 0; i-- {
 		conn := p.pool[i]
 		if conn.expiresFromPool.Before(time.Now()) {
