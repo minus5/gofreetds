@@ -193,6 +193,8 @@ func (p *ConnPool) cleanup() {
 
 //Statistic about connections in the pool.
 func (p *ConnPool) Stat() (max, count, active int) {
+        p.poolMutex.Lock()
+        defer p.poolMutex.Unlock()
 	max = p.maxConn
 	count = p.connCount
 	inactive := len(p.pool)
