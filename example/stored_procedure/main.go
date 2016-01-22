@@ -8,15 +8,15 @@ import (
 
 type Author struct {
 	FirstName string
-	LastName string
-	Titles []*Title
+	LastName  string
+	Titles    []*Title
 }
 
 type Title struct {
 	TitleId string
-	Title string
-	Type string
-	Price float64
+	Title   string
+	Type    string
+	Price   float64
 }
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 
 	//read the output prams
 	var fullName string
-	if err := rst.ParamScan(&fullName); err != nil{
+	if err := rst.ParamScan(&fullName); err != nil {
 		panic(err)
 	}
 
