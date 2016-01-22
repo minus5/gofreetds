@@ -3,7 +3,7 @@ package freetds
 import (
 	"database/sql"
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )
