@@ -90,7 +90,11 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 		binary.Read(buf, binary.LittleEndian, &days)
 		binary.Read(buf, binary.LittleEndian, &sec)
 		if days == sqlMaxTimeDays && sec == sqlMaxTimeSec {
-			return toLocalTime(SqlMaxTime)
+			// Do not modify the time using an offset, just change the timezone. 
+			return SqlMaxTime.Local()
+		} else if days == sqlMinTimeDays && sec == sqlMinTimeSec {
+			// Do not modify the time using an offset, just change the timezone. 
+			return SqlMinTime.Local()
 		} else {
 			value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
 			return toLocalTime(value)
