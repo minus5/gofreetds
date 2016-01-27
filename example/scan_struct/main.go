@@ -7,8 +7,8 @@ import (
 )
 
 type author struct {
-	Id string
-	LastName string
+	Id        string
+	LastName  string
 	FirstName string
 }
 
@@ -37,14 +37,13 @@ func main() {
 		panic(err)
 	}
 	result := rst[0]
-	for ;result.Next(); {
+	for result.Next() {
 		var a author
 		//scan into struct, expected 3 values to be scaned
 		err := result.MustScan(3, &a)
 		if err != nil {
 			panic(err)
-		}	
+		}
 		fmt.Printf("%-15s%-20s%-20s\n", a.Id, a.FirstName, a.LastName)
 	}
 }
-
