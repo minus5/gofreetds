@@ -152,6 +152,9 @@ func (p *ConnPool) addToPool(conn *Conn) {
 		newPool = append(newPool, conn)
 		newPool = append(newPool, p.pool...)
 		p.pool = newPool
+	} else {
+		conn.close()
+		p.connCount--
 	}
 }
 

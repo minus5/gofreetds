@@ -46,7 +46,15 @@ const (
 	SYBUNIQUE = 36 //uniqueidentifier string
 )
 
-var sqlStartTime = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+var (
+	sqlStartTime          = time.Date(1900, 1, 1, 0, 0, 0, 0, time.UTC)
+	sqlMaxTime            = time.Date(9999, 12, 31, 23, 59, 59, 997, time.UTC)
+	sqlMaxTimeDays int32  = 2958463
+	sqlMaxTimeSec  uint32 = 25919999
+	sqlMinTime            = time.Date(1753, 01, 01, 00, 00, 00, 000, time.UTC)
+	sqlMinTimeDays int32  = -53690
+	sqlMinTimeSec  uint32 = 0
+)
 
 func toLocalTime(value time.Time) time.Time {
 	value = value.In(time.Local)
@@ -79,8 +87,16 @@ func sqlBufToType(datatype int, data []byte) interface{} {
 		var sec uint32 /* 300ths of a second since midnight */
 		binary.Read(buf, binary.LittleEndian, &days)
 		binary.Read(buf, binary.LittleEndian, &sec)
-		value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
-		return toLocalTime(value)
+		if days == sqlMaxTimeDays && sec == sqlMaxTimeSec {
+			// Do not modify the time using an offset, just change the timezone.
+			return sqlMaxTime.Local()
+		} else if days == sqlMinTimeDays && sec == sqlMinTimeSec {
+			// Do not modify the time using an offset, just change the timezone.
+			return sqlMinTime.Local()
+		} else {
+			value := sqlStartTime.Add(time.Duration(days) * time.Hour * 24).Add(time.Duration(sec) * time.Second / 300)
+			return toLocalTime(value)
+		}
 	case SYBDATETIME4:
 		var days uint16 /* number of days since 1/1/1900 */
 		var mins uint16 /* number of minutes since midnight */
