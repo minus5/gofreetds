@@ -202,12 +202,23 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 	case SYBDATETIME:
 		//database time is always in local timezone
 		if tm, ok := value.(time.Time); ok {
-			tm = tm.Local()
-			diff := tm.UnixNano() - sqlStartTime.UnixNano()
-			_, of := tm.Zone()
-			diff += int64(time.Duration(of) * time.Second)
-			days := int32(diff / 1e9 / 60 / 60 / 24)
-			secs := uint32(float64(diff-int64(days)*1e9*60*60*24) * 0.0000003)
+			var days int32
+			var secs uint32
+			// Skip the math and just use constants for SQL Max or Min Time
+			if tm.Equal(sqlMaxTime) {
+				days = sqlMaxTimeDays
+				secs = sqlMaxTimeSec
+			} else if tm.Equal(sqlMinTime) {
+				days = sqlMinTimeDays
+				secs = sqlMinTimeSec
+			} else {
+				tm = tm.Local()
+				diff := tm.UnixNano() - sqlStartTime.UnixNano()
+				_, of := tm.Zone()
+				diff += int64(time.Duration(of) * time.Second)
+				days = int32(diff / 1e9 / 60 / 60 / 24)
+				secs = uint32(float64(diff-int64(days)*1e9*60*60*24) * 0.0000003)
+			}
 			err = binary.Write(buf, binary.LittleEndian, days)
 			if err == nil {
 				err = binary.Write(buf, binary.LittleEndian, secs)
