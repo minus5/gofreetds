@@ -1,9 +1,10 @@
 package freetds
 
 import (
-	"github.com/stretchrcom/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var now = time.Now()
@@ -130,5 +131,5 @@ func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
 	assert.Equal(t, s.Int64, 5)
 
 	assert.Equal(t, s.Float32, 5.5)
-	assert.Equal(t, s.Float64, 6.5)
+	assert.EqualValues(t, s.Float64, 6.5)
 }

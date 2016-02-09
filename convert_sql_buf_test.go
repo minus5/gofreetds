@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInt(t *testing.T) {
@@ -27,7 +27,7 @@ func TestInt16(t *testing.T) {
 	data, _, err := typeToSqlBuf(SYBINT2, 32768, false)
 	assert.Nil(t, err)
 	i16 := sqlBufToType(SYBINT2, data)
-	assert.Equal(t, i16, -32768)
+	assert.EqualValues(t, i16, -32768)
 	//error
 	_, _, err = typeToSqlBuf(SYBINT2, "pero", false)
 	assert.NotNil(t, err)
@@ -110,5 +110,5 @@ func testToSqlToType(t *testing.T, typ int, value interface{}) {
 	data, _, err := typeToSqlBuf(typ, value, false)
 	assert.Nil(t, err)
 	value2 := sqlBufToType(typ, data)
-	assert.Equal(t, value, value2)
+	assert.EqualValues(t, value, value2)
 }

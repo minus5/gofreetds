@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExecSp(t *testing.T) {
@@ -118,11 +118,11 @@ func TestExecSpOutputParams(t *testing.T) {
 	assert.True(t, rst.HasOutputParams())
 	assert.Equal(t, len(rst.outputParams), 1)
 	assert.Equal(t, rst.outputParams[0].Name, "@p1")
-	assert.Equal(t, rst.outputParams[0].Value, 124)
+	assert.EqualValues(t, rst.outputParams[0].Value, 124)
 	var p1 int32
 	err = rst.ParamScan(&p1)
 	assert.Nil(t, err)
-	assert.Equal(t, p1, 124)
+	assert.EqualValues(t, p1, 124)
 }
 
 func TestGetSpParams(t *testing.T) {
@@ -131,10 +131,10 @@ func TestGetSpParams(t *testing.T) {
 	assert.Nil(t, err)
 	p := params[0]
 	assert.Equal(t, p.Name, "@p1")
-	assert.Equal(t, p.ParameterId, 1)
-	assert.Equal(t, p.UserTypeId, SYBINT4)
+	assert.EqualValues(t, p.ParameterId, 1)
+	assert.EqualValues(t, p.UserTypeId, SYBINT4)
 	assert.Equal(t, p.IsOutput, false)
-	assert.Equal(t, p.MaxLength, 4)
+	assert.EqualValues(t, p.MaxLength, 4)
 	assert.Equal(t, int(p.Precision), 0xa)
 	assert.Equal(t, int(p.Scale), 0x0)
 }

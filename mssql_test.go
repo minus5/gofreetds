@@ -3,9 +3,10 @@ package freetds
 import (
 	"database/sql"
 	"fmt"
-	"github.com/stretchrcom/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func open() (*sql.DB, error) {
@@ -78,20 +79,20 @@ func TestLastInsertIdRowsAffected(t *testing.T) {
 	assert.NotNil(t, r)
 	id, err := r.LastInsertId()
 	assert.Nil(t, err)
-	assert.Equal(t, id, 1)
+	assert.EqualValues(t, id, 1)
 	ra, err := r.RowsAffected()
 	assert.Nil(t, err)
-	assert.Equal(t, ra, 1)
+	assert.EqualValues(t, ra, 1)
 
 	r, err = db.Exec("insert into test_last_insert_id values(?)", "pero")
 	assert.Nil(t, err)
 	assert.NotNil(t, r)
 	id, err = r.LastInsertId()
 	assert.Nil(t, err)
-	assert.Equal(t, id, 2)
+	assert.EqualValues(t, id, 2)
 	ra, err = r.RowsAffected()
 	assert.Nil(t, err)
-	assert.Equal(t, ra, 1)
+	assert.EqualValues(t, ra, 1)
 
 	r, err = db.Exec("update test_last_insert_id set name = ?", "jozo")
 	assert.Nil(t, err)
@@ -100,13 +101,13 @@ func TestLastInsertIdRowsAffected(t *testing.T) {
 	assert.NotNil(t, err)
 	ra, err = r.RowsAffected()
 	assert.Nil(t, err)
-	assert.Equal(t, ra, 2)
+	assert.EqualValues(t, ra, 2)
 
 	r, err = db.Exec("delete from test_last_insert_id")
 	assert.Nil(t, err)
 	ra, err = r.RowsAffected()
 	assert.Nil(t, err)
-	assert.Equal(t, ra, 2)
+	assert.EqualValues(t, ra, 2)
 }
 
 func createTestTable(t *testing.T, db *sql.DB, name string, columDef string) {

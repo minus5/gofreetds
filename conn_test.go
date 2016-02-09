@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchrcom/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`
@@ -206,7 +206,7 @@ func TestSelectValue(t *testing.T) {
 
 	val, err := conn.SelectValue("select 1")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, val)
+	assert.EqualValues(t, 1, val)
 
 	val, err = conn.SelectValue("select 1 where 1=2")
 	assert.NotNil(t, err)
@@ -313,7 +313,7 @@ func TestTransactionCommitRollback(t *testing.T) {
 	assert.Nil(t, err)
 	rows, err := conn.SelectValue("select count(*)  from test_transaction")
 	assert.Nil(t, err)
-	assert.Equal(t, rows, 2)
+	assert.EqualValues(t, rows, 2)
 
 	//roollback
 	err = conn.Begin()
@@ -323,7 +323,7 @@ func TestTransactionCommitRollback(t *testing.T) {
 	assert.Nil(t, err)
 	rows, err = conn.SelectValue("select count(*)  from test_transaction")
 	assert.Nil(t, err)
-	assert.Equal(t, rows, 2)
+	assert.EqualValues(t, rows, 2)
 }
 
 func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
