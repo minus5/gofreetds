@@ -105,7 +105,6 @@ func (r *Result) scanStruct(s *reflect.Value) error {
 		if f.IsValid() {
 			if f.CanSet() {
 				if err := convertAssign(f.Addr().Interface(), r.Rows[r.currentRow][i]); err != nil {
-					//if err := assignValue(r.Rows[r.currentRow][i], f.Addr().Interface());  err != nil {
 					return err
 				}
 				r.scanCount++
