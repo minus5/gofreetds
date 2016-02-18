@@ -1,8 +1,10 @@
 package freetds
 
-import "errors"
-
-//	"fmt"
+import (
+	"errors"
+	//	"fmt"
+	"unsafe"
+)
 
 /*
 #include <sybfront.h>
@@ -13,8 +15,6 @@ static int my_dbcount(DBPROCESS * dbproc) {
 }
 */
 import "C"
-
-const varcharMaxSize = 2147483647
 
 func (conn *Conn) fetchResults() ([]*Result, error) {
 	results := make([]*Result, 0)
@@ -43,20 +43,26 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
 			}
-			if size == varcharMaxSize {
-				size = 8000
-			}
 			col := &columns[i]
+			// can column data size vary between each row?
+			col.canVary = C.dbvarylen(conn.dbproc, no) == C.DBINT(1)
+			if col.canVary {
+				size = 0
+			}
 			col.name = name
 			col.typ = int(typ)
 			col.size = int(size)
 			col.bindTyp = int(bindTyp)
-			col.buffer = make([]byte, size+1)
-			erc = C.dbbind(conn.dbproc, no, bindTyp, size+1, (*C.BYTE)(&col.buffer[0]))
-			//fmt.Printf("dbbind %d, %d, %v\n", bindTyp, size+1, col.buffer)
-			if erc == C.FAIL {
-				return nil, errors.New("dbbind failed: no such column or no such conversion possible, or target buffer too small")
+			// If row data can vary, don't bind it now, read the data later using C.dbdata when scanning rows.
+			if !col.canVary {
+				col.buffer = make([]byte, size + 1)
+				erc = C.dbbind(conn.dbproc, no, bindTyp, size + 1, (*C.BYTE)(&col.buffer[0]))
+				//fmt.Printf("dbbind %d, %d, %v\n", bindTyp, size+1, col.buffer)
+				if erc == C.FAIL {
+					return nil, errors.New("dbbind failed: no such column or no such conversion possible, or target buffer too small")
+				}
 			}
+			// We still use dbnullbind for all variable and non variable columns. Should work fine.
 			erc = C.dbnullbind(conn.dbproc, no, &col.status)
 			if erc == C.FAIL {
 				return nil, errors.New("dbnullbind failed")
@@ -72,6 +78,38 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 				for j := 0; j < cols; j++ {
 					col := columns[j]
 					//fmt.Printf("col: %#v\nvalue:%s\n", col, col.Value())
+
+					no := C.int(j + 1)
+					// if canVary is true, we don't rely on dbbind to do it's thing,
+					// but instead we will ask C.dbdata() for pointer to the data.
+					// We cannot call C.dbbind here, because for that it's too late (we already called C.dbnextrow()).
+					if col.canVary {
+						// actual size for this row
+						// dbdata returns null if data are null.
+						// Source: http://lists.ibiblio.org/pipermail/freetds/2015q2/029392.html
+						//    From Sybase documentation:
+						//    "A NULL BYTE pointer is returned if there is no such column or if the
+						//    data has a null value. To make sure that the data is really a null
+						//    value, you should always check for a return of 0 from *dbdatlen*."
+						//
+						//    From Microsoft documentation:
+						//    "A NULL BYTE pointer is returned if there is no such column or if the
+						//    data has a null value. To make sure that the data is really a null
+						//    value, check for a return of 0 from *dbdatlen*."
+						//
+						//    So you can use: dbdata()==nil && dbdatlen()==0
+						// @see http://www.freetds.org/reference/a00341.html#gaee60c306a22383805a4b9caa647a1e16
+						size := C.dbdatlen(conn.dbproc, no)
+						data := C.dbdata(conn.dbproc, no)
+						if data == nil && size != 0 {
+							return nil, errors.New("dbdata failed: server returned non-nil data with size 0")
+						}
+						if data != nil {
+							// @see https://github.com/golang/go/wiki/cgo
+							col.buffer = C.GoBytes(unsafe.Pointer(data), C.int(size))
+						}
+					}
+
 					result.addValue(i, j, col.Value())
 				}
 			}
@@ -99,6 +137,7 @@ type column struct {
 	status  C.DBINT
 	bindTyp int
 	buffer  []byte
+	canVary bool
 }
 
 func (col *column) Value() interface{} {
