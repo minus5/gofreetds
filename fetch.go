@@ -1,9 +1,8 @@
 package freetds
 
-import (
-	"errors"
-	//	"fmt"
-)
+import "errors"
+
+//	"fmt"
 
 /*
 #include <sybfront.h>
@@ -14,6 +13,8 @@ static int my_dbcount(DBPROCESS * dbproc) {
 }
 */
 import "C"
+
+const varcharMaxSize = 2147483647
 
 func (conn *Conn) fetchResults() ([]*Result, error) {
 	results := make([]*Result, 0)
@@ -41,6 +42,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			result.addColumn(name, int(size), int(typ))
 			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
+			}
+			if size == varcharMaxSize {
+				size = 8000
 			}
 			col := &columns[i]
 			col.name = name
