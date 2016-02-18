@@ -319,3 +319,19 @@ func TestNewDateTypesParam(t *testing.T) {
 	assert.Equal(t, "12:30:00.0000000", op3)
 	assert.Equal(t, "2025-12-10 12:32:10.0000000", op4)
 }
+
+func TestExecSpWithMaxVarchar(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_varchar_max", `
+    (@p1 varchar(max)) as
+    select @p1`)
+	assert.Nil(t, err)
+	str := longString()
+	rst, err := conn.ExecSp("test_sp_varchar_max", str)
+	assert.Nil(t, err)
+	var str2 string
+	result := rst.results[0]
+	result.Next()
+	result.Scan(&str2)
+	assert.Equal(t, str, str2)
+}

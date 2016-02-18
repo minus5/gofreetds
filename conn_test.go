@@ -419,12 +419,15 @@ func TestParseFreeTdsVersion(t *testing.T) {
 
 func TestVarcharMax(t *testing.T) {
 	testNvarcharMax(t, "some short string")
+	testNvarcharMax(t, longString())
+}
 
+func longString() string {
 	long := ""
 	for i := 0; i < 400; i++ {
 		long += "0123456789"
 	}
-	testNvarcharMax(t, long)
+	return long
 }
 
 func testNvarcharMax(t *testing.T, str string) {
