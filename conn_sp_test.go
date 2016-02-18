@@ -323,7 +323,7 @@ func TestNewDateTypesParam(t *testing.T) {
 func TestExecSpWithMaxVarchar(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_varchar_max", `
-    (@p1 varchar(max)) as
+    (@p1 varchar(max) output) as
     select @p1`)
 	assert.Nil(t, err)
 	str := longString()
@@ -332,6 +332,12 @@ func TestExecSpWithMaxVarchar(t *testing.T) {
 	var str2 string
 	result := rst.results[0]
 	result.Next()
-	result.Scan(&str2)
+	err = result.Scan(&str2)
+	assert.Nil(t, err)
 	assert.Equal(t, str, str2)
+
+	var str3 string
+	err = rst.ParamScan(&str3)
+	assert.Nil(t, err)
+	assert.Equal(t, str, str3)
 }

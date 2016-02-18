@@ -67,6 +67,9 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			if spParam.IsOutput {
 				status = C.DBRPCRETURN
 				maxOutputSize = C.DBINT(spParam.MaxLength)
+				if maxOutputSize == -1 {
+					maxOutputSize = 8000
+				}
 			}
 			paramname := C.CString(spParam.Name)
 			defer C.free(unsafe.Pointer(paramname))
