@@ -44,19 +44,17 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
 			}
 			col := &columns[i]
-			// can column data size vary between each row?
-			col.canVary = C.dbvarylen(conn.dbproc, no) == C.DBINT(1)
-			if col.canVary {
-				size = 0
-			}
+			// detecting varchar(max) or varbinary(max) types
+			col.canVary = (size == 2147483647 && typ == SYBCHAR) ||
+				(size == 1073741823 && typ == SYBBINARY)
 			col.name = name
 			col.typ = int(typ)
 			col.size = int(size)
 			col.bindTyp = int(bindTyp)
 			// If row data can vary, don't bind it now, read the data later using C.dbdata when scanning rows.
 			if !col.canVary {
-				col.buffer = make([]byte, size + 1)
-				erc = C.dbbind(conn.dbproc, no, bindTyp, size + 1, (*C.BYTE)(&col.buffer[0]))
+				col.buffer = make([]byte, size+1)
+				erc = C.dbbind(conn.dbproc, no, bindTyp, size+1, (*C.BYTE)(&col.buffer[0]))
 				//fmt.Printf("dbbind %d, %d, %v\n", bindTyp, size+1, col.buffer)
 				if erc == C.FAIL {
 					return nil, errors.New("dbbind failed: no such column or no such conversion possible, or target buffer too small")
