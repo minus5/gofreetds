@@ -74,6 +74,9 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 }
 
 func (p *ConnPool) newConn() (*Conn, error) {
+	p.poolMutex.Lock()
+	defer p.poolMutex.Unlock()
+
 	conn, err := NewConn(p.connStr)
 	if err == nil {
 		conn.belongsToPool = p
