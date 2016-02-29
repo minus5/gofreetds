@@ -45,7 +45,10 @@ import (
   DBSETLUSER(login, username);
   DBSETLPWD(login, password);
   dbsetlname(login, "UTF-8", DBSETCHARSET);
-  //dbsetlversion(login, DBVERSION_72);
+ }
+
+ static void my_setlversion(LOGINREC* login) {
+  dbsetlversion(login, DBVERSION_72);
  }
 
  static long dbproc_addr(DBPROCESS * dbproc) {
@@ -55,6 +58,8 @@ import (
 import "C"
 
 var connections map[int64]*Conn = make(map[int64]*Conn)
+
+const SYBASE string = "sybase"
 
 //Connection to the database.
 type Conn struct {
@@ -170,6 +175,13 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	cpwd := C.CString(conn.pwd)
 	defer C.free(unsafe.Pointer(cpwd))
 	C.my_dblogin(login, cuser, cpwd)
+
+	// Added for Sybase compatibility mode
+	// Version cannot be set to 7.2
+	// Allowing version to be set inside freetds
+	if conn.credentials.compatibility != SYBASE {
+		C.my_setlversion(login)
+	}
 
 	chost := C.CString(conn.host)
 	defer C.free(unsafe.Pointer(chost))
@@ -356,14 +368,17 @@ func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
 
 func (conn *Conn) setDefaults() error {
 	var err error
-	if conn.credentials.compatibility != "sybase" {
+	// Adding check for Sybase compatiblity mode
+	// These connection settings below do not
+	// function with Sybase ASE
+	if conn.credentials.compatibility != SYBASE {
 		//defaults copied from .Net Driver
 		_, err = conn.exec(`
-	    set quoted_identifier on
-	    set ansi_warnings on
-	    set ansi_padding off
-	    set concat_null_yields_null on
-	   `)
+	    		set quoted_identifier on
+			set ansi_warnings on
+	    		set ansi_padding off
+	    		set concat_null_yields_null on
+	   	`)
 		if err != nil {
 			return err
 		}
