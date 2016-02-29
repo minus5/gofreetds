@@ -34,7 +34,7 @@ func NewCredentials(connStr string) *credentials {
 					crd.maxPoolSize = i
 				}
 			case "compatibility_mode", "compatibility mode", "compatibility":
-				crd.compatibility = value
+				crd.compatibility = strings.ToLower(value)
 			case "lock timeout", "lock_timeout":
 				if i, err := strconv.Atoi(value); err == nil {
 					crd.lockTimeout = i
