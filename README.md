@@ -29,7 +29,7 @@ sudo apt-get install freetds-dev
 ### Go get
 
 ```
-go get github.com/minus5/gofreetds 
+go get github.com/minus5/gofreetds
 ```
 
 ### Docs
@@ -108,6 +108,10 @@ Execute query with params:
 ```go
 rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
 ```
+
+## Sybase Compatibility Mode
+
+This is some examples of using Sybase ASE 16 with gofreetds.
 
 ## Testing
 
