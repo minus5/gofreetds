@@ -111,6 +111,12 @@ rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where
 
 ## Sybase Compatibility Mode
 
+### Connection String Parameter
+
+```
+Server=myServerAddress;Database=myDatabase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Compatibility Mode=Sybase
+```
+
 This is some examples of using Sybase ASE 16 with gofreetds.
 
 ## Testing
