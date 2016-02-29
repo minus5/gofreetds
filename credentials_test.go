@@ -8,12 +8,12 @@ import (
 
 func TestParseConnectionString(t *testing.T) {
 	validConnStrings := []string{
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000,Compatibility Mode=sybase",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000,Compatibility_Mode=sybase",
-		"Server=myServerAddress;Database=myDataBase;User_Id=myUsername;Password=myPassword;Failover_Partner=myMirror;Max_Pool_Size=200;Lock_Timeout=1000,Compatibility=sybase",
-		"server=myServerAddress;database=myDataBase;user_id=myUsername;password=myPassword;failover_partner=myMirror;max_pool_size=200;lock_timeout=1000,compatibility_mode=sybase",
-		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;max_pool_size=200;lock_timeout=1000,compatibility mode=sybase",
-		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;max_pool_size=200;lock_timeout=1000,compatibility=sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility Mode=sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility_Mode=sybase",
+		"Server=myServerAddress;Database=myDataBase;User_Id=myUsername;Password=myPassword;Failover_Partner=myMirror;Max_Pool_Size=200;Lock_Timeout=1000;Compatibility=sybase",
+		"server=myServerAddress;database=myDataBase;user_id=myUsername;password=myPassword;failover_partner=myMirror;max_pool_size=200;lock_timeout=1000;compatibility_mode=sybase",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;max_pool_size=200;lock_timeout=1000;compatibility mode=sybase",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=myPassword;mirror=myMirror;max_pool_size=200;lock_timeout=1000;compatibility=sybase",
 	}
 	for _, connStr := range validConnStrings {
 		testCredentials(t, NewCredentials(connStr))
