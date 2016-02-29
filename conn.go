@@ -374,10 +374,10 @@ func (conn *Conn) setDefaults() error {
 	if conn.credentials.compatibility != SYBASE {
 		//defaults copied from .Net Driver
 		_, err = conn.exec(`
-	    		set quoted_identifier on
-			set ansi_warnings on
-	    		set ansi_padding off
-	    		set concat_null_yields_null on
+				set quoted_identifier on
+				set ansi_warnings on
+	    	set ansi_padding off
+				set concat_null_yields_null on
 	   	`)
 		if err != nil {
 			return err

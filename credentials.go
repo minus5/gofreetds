@@ -7,7 +7,7 @@ import (
 
 type credentials struct {
 	user, pwd, host, database, mirrorHost, compatibility string
-	maxPoolSize, lockTimeout              							 int
+	maxPoolSize, lockTimeout int
 }
 
 func NewCredentials(connStr string) *credentials {
