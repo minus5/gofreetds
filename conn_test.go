@@ -34,7 +34,9 @@ create table freetds_types (
   bit bit null,
   timestamp timestamp null,
   binary binary(10) null,
-  nvarchar_max nvarchar(max) null
+  nvarchar_max nvarchar(max) null,
+  varchar_max varchar(max) null,
+  varbinary_max varbinary(max) null
 )
 ;
 
@@ -419,23 +421,26 @@ func TestParseFreeTdsVersion(t *testing.T) {
 
 func TestVarcharMax(t *testing.T) {
 	testNvarcharMax(t, "some short string")
-	testNvarcharMax(t, longString())
+	testNvarcharMax(t, longString(8000))
+	testNvarcharMax(t, longString(10000))
 }
 
-func longString() string {
-	long := ""
-	for i := 0; i < 400; i++ {
-		long += "0123456789"
-	}
-	return long
+func longString(size int) string {
+	return strings.Repeat("-", size)
 }
 
 func testNvarcharMax(t *testing.T, str string) {
 	c := ConnectToTestDb(t)
-	_, err := c.ExecuteSql("update dbo.freetds_types set nvarchar_max=? where int = 3", str)
+	_, err := c.Exec(fmt.Sprintf("update dbo.freetds_types set nvarchar_max='%s' where int = 3", str))
 	assert.Nil(t, err)
 	val, err := c.SelectValue("select nvarchar_max from dbo.freetds_types where int = 3")
 	assert.Nil(t, err)
 	//t.Logf("nvarchar_max: %v", val)
 	assert.Equal(t, str, val)
+}
+
+func TestTypes(t *testing.T) {
+	c := ConnectToTestDb(t)
+	_, err := c.ExecuteSql("select * from  dbo.freetds_types")
+	assert.Nil(t, err)
 }
