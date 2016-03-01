@@ -341,3 +341,25 @@ func TestExecSpWithVarcharMax(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, str, str3)
 }
+
+func TestNullValueScan(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_sp_null_value_scan", `
+    as
+    DECLARE @p1 varchar(255)
+    DECLARE @p2 varchar(255)
+    set @p2 = 'p2'
+    SELECT @p1, @p2
+    `)
+	assert.Nil(t, err)
+	rst, err := conn.ExecSp("test_sp_null_value_scan")
+	assert.Nil(t, err)
+	assert.NotNil(t, rst)
+	rst.Next()
+	var p1, p2 *string
+	err = rst.Scan(&p1, &p2)
+	assert.Nil(t, err)
+	assert.Nil(t, p1)
+	assert.NotNil(t, p2)
+	assert.Equal(t, "p2", *p2)
+}
