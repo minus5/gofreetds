@@ -13,7 +13,7 @@ Features:
 
 ##Get started
 
-###Instal dependencines
+###Install dependencines
 
 [FreeTDS](http://www.freetds.org/) libraries must be installed on the system.
 
@@ -29,7 +29,7 @@ sudo apt-get install freetds-dev
 ### Go get
 
 ```
-go get github.com/minus5/gofreetds 
+go get github.com/minus5/gofreetds
 ```
 
 ### Docs
@@ -108,6 +108,23 @@ Execute query with params:
 ```go
 rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where au_id = ?", "998-72-3567")
 ```
+
+## Sybase Compatibility Mode
+
+Gofreetds now supports Sybase ASE 16.0 through the driver. In order to support this, this post is very helpful: [Connect to MS SQL Server and Sybase ASE from Mac OS X and Linux with unixODBC and FreeTDS](http://2tbsp.com/articles/2012/06/08/connect-ms-sql-server-and-sybase-ase-mac-os-x-and-linux-unixodbc-and-freetds)
+
+To use a Sybase ASE server with Gofreetds, you simply need to set a compatibility mode on your connection string after you've configured your .odbc.ini file and .freetds.conf file.
+
+This mode uses TDS Version 5.
+
+### Connection String Parameter
+
+You can set your connection string up for Sybase by using the 'compatibility_mode' Parameter. The parameter can be named 'compatibility', 'compatibility mode', 'compatibility_mode' or 'Compatibility Mode'. Currently this mode only supports Sybase. To specify you can use 'sybase' or 'Sybase'.
+
+```
+Server=myServerAddress;Database=myDatabase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Compatibility Mode=Sybase
+```
+
 
 ## Testing
 
