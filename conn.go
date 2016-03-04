@@ -45,6 +45,9 @@ import (
   DBSETLUSER(login, username);
   DBSETLPWD(login, password);
   dbsetlname(login, "UTF-8", DBSETCHARSET);
+ }
+
+ static void my_setlversion(LOGINREC* login) {
   dbsetlversion(login, DBVERSION_72);
  }
 
@@ -74,6 +77,8 @@ func deleteConnection(conn *Conn) {
 	defer connectionsMutex.Unlock()
 	delete(connections, conn.addr)
 }
+
+const SYBASE string = "sybase"
 
 //Connection to the database.
 type Conn struct {
@@ -189,6 +194,13 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	cpwd := C.CString(conn.pwd)
 	defer C.free(unsafe.Pointer(cpwd))
 	C.my_dblogin(login, cuser, cpwd)
+
+	// Added for Sybase compatibility mode
+	// Version cannot be set to 7.2
+	// Allowing version to be set inside freetds
+	if conn.credentials.compatibility != SYBASE {
+		C.my_setlversion(login)
+	}
 
 	chost := C.CString(conn.host)
 	defer C.free(unsafe.Pointer(chost))
@@ -357,12 +369,12 @@ func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
 	rst, err := conn.exec(fmt.Sprintf(`
     SELECT
     	case when mirroring_guid is not null then 1 else 0 end mirroring_active,
-    	case when mirroring_role = 2 then 0 else 1 end is_master, 
+    	case when mirroring_role = 2 then 0 else 1 end is_master,
     	mirroring_state, mirroring_state_desc, mirroring_role, mirroring_role_desc,
-      database_id, 
-    	DB_NAME(database_id) database_name     	
+      database_id,
+    	DB_NAME(database_id) database_name
     FROM sys.database_mirroring
-    WHERE DB_NAME(database_id)='%s' 
+    WHERE DB_NAME(database_id)='%s'
   `, conn.database))
 	if err != nil {
 		return true, false, false, err
@@ -374,15 +386,21 @@ func (conn *Conn) MirrorStatus() (bool, bool, bool, error) {
 }
 
 func (conn *Conn) setDefaults() error {
-	//defaults copied from .Net Driver
-	_, err := conn.exec(`
-    set quoted_identifier on
-    set ansi_warnings on
-    set ansi_padding off
-    set concat_null_yields_null on
-   `)
-	if err != nil {
-		return err
+	var err error
+	// Adding check for Sybase compatiblity mode
+	// These connection settings below do not
+	// function with Sybase ASE
+	if conn.credentials.compatibility != SYBASE {
+		//defaults copied from .Net Driver
+		_, err = conn.exec(`
+        set quoted_identifier on
+        set ansi_warnings on
+        set ansi_padding off
+        set concat_null_yields_null on
+	   	`)
+		if err != nil {
+			return err
+		}
 	}
 	if t := conn.credentials.lockTimeout; t > 0 {
 		_, err = conn.exec(fmt.Sprintf("set lock_timeout %d", t))

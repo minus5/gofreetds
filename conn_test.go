@@ -444,3 +444,10 @@ func TestTypes(t *testing.T) {
 	_, err := c.ExecuteSql("select * from  dbo.freetds_types")
 	assert.Nil(t, err)
 }
+
+func TestExecuteSqlNullString(t *testing.T) {
+	c := ConnectToTestDb(t)
+	var str *string
+	_, err := c.ExecuteSql("update dbo.freetds_types set nvarchar_max=? where int = 3", str)
+	assert.Nil(t, err)
+}
