@@ -58,6 +58,25 @@ import (
 import "C"
 
 var connections map[int64]*Conn = make(map[int64]*Conn)
+var connectionsMutex sync.Mutex
+
+func getConnection(addr int64) *Conn {
+	connectionsMutex.Lock()
+	defer connectionsMutex.Unlock()
+	return connections[addr]
+}
+
+func addConnection(conn *Conn) {
+	connectionsMutex.Lock()
+	defer connectionsMutex.Unlock()
+	connections[conn.addr] = conn
+}
+
+func deleteConnection(conn *Conn) {
+	connectionsMutex.Lock()
+	defer connectionsMutex.Unlock()
+	delete(connections, conn.addr)
+}
 
 const SYBASE string = "sybase"
 
@@ -123,7 +142,7 @@ func (conn *Conn) connect() (*Conn, error) {
 	}
 	conn.dbproc = dbproc
 	conn.addr = int64(C.dbproc_addr(dbproc))
-	connections[conn.addr] = conn
+	addConnection(conn)
 	if err := conn.DbUse(); err != nil {
 		conn.close()
 		return nil, err
@@ -147,7 +166,7 @@ func (conn *Conn) Close() {
 }
 
 func (conn *Conn) close() {
-	delete(connections, conn.addr)
+	deleteConnection(conn)
 	if conn.dbproc != nil {
 		C.dbclose(conn.dbproc)
 		C.dbexit()
