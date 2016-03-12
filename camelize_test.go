@@ -1,8 +1,9 @@
 package freetds
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCamelize(t *testing.T) {
@@ -12,4 +13,7 @@ func TestCamelize(t *testing.T) {
 	assert.Equal(t, "IsoMedoUDucan", camelize("iso-medo-u-ducan"))
 	assert.Equal(t, "IsoMedoUDucan", camelize("isoMedoUDucan"))
 	assert.Equal(t, "IsoMedoUDucan", camelize("iso_medo-uDucan"))
+	assert.Equal(t, "IPAddress", camelize("IPAddress"))
+	assert.Equal(t, "IpAddress", camelize("ip_address"))
+	assert.Equal(t, "SomeFieldName", camelize("some-field:name"))
 }
