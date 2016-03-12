@@ -34,5 +34,6 @@ example/exec/exec
 example/mssql/mssql
 example/scan_struct/scan_struct
 example/stored_procedure/stored_procedure
+example/sp_help/sp_help
 
 build_examples
