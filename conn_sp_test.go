@@ -1,6 +1,7 @@
 package freetds
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -49,7 +50,7 @@ func TestExecSpInputParams(t *testing.T) {
 func TestExecSpInputParamsTypes(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_input_params3", `
-    @p1 int = 0, @p2 smallint, @p3 bigint, @p4 tinyint, @p5 money, @p6 real as 
+    @p1 int = 0, @p2 smallint, @p3 bigint, @p4 tinyint, @p5 money, @p6 real as
     select @p1, @p2, @p3, @p4, @p5, @p6
     return 1`)
 	assert.Nil(t, err)
@@ -73,7 +74,7 @@ func TestExecSpInputParamsTypes(t *testing.T) {
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_input_params2", `
-  @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10), @p6 as nvarchar(255) as 
+  @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10), @p6 as nvarchar(255) as
   select @p1, @p2, @p3, @p4, @p5, @p6
   if exists(select * from sys.tables where name = 'tbl_test_input_params2')
      drop table tbl_test_input_params2
@@ -139,13 +140,33 @@ func TestGetSpParams(t *testing.T) {
 	assert.Equal(t, int(p.Scale), 0x0)
 }
 
+func TestGetSpParamsSql(t *testing.T) {
+	testSpName := "test_get_sp_params"
+
+	var conn *Conn
+	var expectedSql, actualSql string
+
+	conn = &Conn{}
+	expectedSql = fmt.Sprintf(msSqlGetSpParamsSql, testSpName)
+	actualSql = conn.getSpParamsSql(testSpName)
+	assert.Equal(t, expectedSql, actualSql)
+
+	creds := NewCredentials("Compatibility Mode=Sybase")
+	conn = &Conn{
+		credentials: *creds,
+	}
+	expectedSql = fmt.Sprintf(sybaseAseGetSpParamsSql, testSpName)
+	actualSql = conn.getSpParamsSql(testSpName)
+	assert.Equal(t, expectedSql, actualSql)
+}
+
 func createProcedure(conn *Conn, name, body string) error {
 	drop := `
 	if exists(select * from sys.procedures where name = 'sp_name')
     drop procedure sp_name
   `
 	create := `
-	create procedure sp_name 
+	create procedure sp_name
     sp_body
   `
 	drop = strings.Replace(drop, "sp_name", name, -1)
