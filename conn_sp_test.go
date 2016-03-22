@@ -140,23 +140,22 @@ func TestGetSpParams(t *testing.T) {
 	assert.Equal(t, int(p.Scale), 0x0)
 }
 
-func TestGetSpParamsSql(t *testing.T) {
-	testSpName := "test_get_sp_params"
-
-	var conn *Conn
-	var expectedSql, actualSql string
-
-	conn = &Conn{}
-	expectedSql = fmt.Sprintf(msSqlGetSpParamsSql, testSpName)
-	actualSql = conn.getSpParamsSql(testSpName)
+func TestGetSpParamsSqlMsSql(t *testing.T) {
+	testSpName := "test_get_sp_params_sql"
+	conn := &Conn{}
+	expectedSql := fmt.Sprintf(msSqlGetSpParamsSql, testSpName)
+	actualSql := conn.getSpParamsSql(testSpName)
 	assert.Equal(t, expectedSql, actualSql)
+}
 
+func TestGetSpParamsSqlSybase(t *testing.T) {
+	testSpName := "test_get_sp_params_sql"
 	creds := NewCredentials("Compatibility Mode=Sybase")
-	conn = &Conn{
+	conn := &Conn{
 		credentials: *creds,
 	}
-	expectedSql = fmt.Sprintf(sybaseAseGetSpParamsSql, testSpName)
-	actualSql = conn.getSpParamsSql(testSpName)
+	expectedSql := fmt.Sprintf(sybaseAseGetSpParamsSql, testSpName)
+	actualSql := conn.getSpParamsSql(testSpName)
 	assert.Equal(t, expectedSql, actualSql)
 }
 
