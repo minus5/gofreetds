@@ -113,9 +113,8 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 func (conn *Conn) raise(err error) error {
 	if len(conn.Error) != 0 {
 		return errors.New(fmt.Sprintf("%s\n%s", conn.Error, conn.Message))
-	} else {
-		return err
 	}
+	return err
 }
 
 func (conn *Conn) raiseError(errMsg string) error {
@@ -204,11 +203,8 @@ const sybaseAseGetSpParamsSql string = `
 `
 
 func (conn *Conn) getSpParamsSql(spName string) string {
-	var sql string
 	if conn.credentials.compatibility == SYBASE {
-		sql = fmt.Sprintf(sybaseAseGetSpParamsSql, spName)
-	} else {
-		sql = fmt.Sprintf(msSqlGetSpParamsSql, spName)
+		return fmt.Sprintf(sybaseAseGetSpParamsSql, spName)
 	}
-	return sql
+	return fmt.Sprintf(msSqlGetSpParamsSql, spName)
 }
