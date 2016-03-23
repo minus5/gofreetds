@@ -123,16 +123,16 @@ func (conn *Conn) raiseError(errMsg string) error {
 }
 
 // func toRpcParam(datatype int, value interface{}) (datalen C.DBINT, datavalue *C.BYTE, err error) {
-// 	data, err := typeToSqlBuf(datatype, value)
-// 	if err != nil {
-// 		return
-// 	}
-// 	datalen = C.DBINT(len(data))
-// 	if len(data) > 0 {
-// 		datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
-// 	}
-// 	//fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
-// 	return
+//   data, err := typeToSqlBuf(datatype, value)
+//   if err != nil {
+//     return
+//   }
+//   datalen = C.DBINT(len(data))
+//   if len(data) > 0 {
+//     datavalue = (*C.BYTE)(unsafe.Pointer(&data[0]))
+//   }
+//   //fmt.Printf("\ndatavalue: %v, datalen: %v, data: %v %s\n", datavalue, datalen, data, data)
+//   return
 // }
 
 //Stored procedure parameter definition
@@ -153,12 +153,8 @@ func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 		return spParams, nil
 	}
 
-	sql := fmt.Sprintf(`
-select name, parameter_id, user_type_id, is_output, max_length, precision, scale
-from sys.all_parameters
-where object_id =  (select object_id from sys.all_objects where object_id = object_id('%s'))
-order by parameter_id
-`, spName)
+	sql := conn.getSpParamsSql(spName)
+
 	results, err := conn.exec(sql)
 	if err != nil {
 		return nil, err
@@ -180,4 +176,39 @@ order by parameter_id
 
 	conn.spParamsCache[spName] = spParams
 	return spParams, nil
+}
+
+const msSqlGetSpParamsSql string = `
+select name, parameter_id, user_type_id, is_output, max_length, precision, scale
+from sys.all_parameters
+where object_id =  (select object_id from sys.all_objects where object_id = object_id('%s'))
+order by parameter_id
+`
+
+const sybaseAseGetSpParamsSql string = `
+  select name = c.name,
+         parameter_id = c.id,
+         user_type_id = c.type,
+         is_output = case
+                       when c.status2 = 2 or c.status2 = 4 then 1
+                       else 0
+                     end,
+         max_length = c.length,
+         precision = isnull(c.prec,0),
+         scale = isnull(c.scale,0)
+    from sysobjects o
+         join syscolumns c
+           on c.id = o.id
+  where o.name = '%s'
+  order by c.id
+`
+
+func (conn *Conn) getSpParamsSql(spName string) string {
+	var sql string
+	if conn.credentials.compatibility == SYBASE {
+		sql = fmt.Sprintf(sybaseAseGetSpParamsSql, spName)
+	} else {
+		sql = fmt.Sprintf(msSqlGetSpParamsSql, spName)
+	}
+	return sql
 }
