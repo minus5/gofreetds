@@ -53,6 +53,14 @@ if exists(select * from sys.procedures where name = 'freetds_return_value')
 `, `
 create procedure freetds_return_value as
   return -5`,
+	`
+if exists(select * from sys.tables where name = 'tm')
+drop table tm
+;
+create table [dbo].[tm] (
+	[id] int NOT NULL IDENTITY(1, 1),
+	[tm] datetime
+)`,
 }
 
 func ConnectToTestDb(t *testing.T) *Conn {
@@ -175,7 +183,7 @@ func TestExecute(t *testing.T) {
 	rst, err = conn.Exec("sp_help 'authors'")
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
-	assert.Equal(t, 9, len(rst))
+	assert.True(t, len(rst) > 7)
 }
 
 func TestRowsAffected(t *testing.T) {
