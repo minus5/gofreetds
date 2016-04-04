@@ -383,3 +383,17 @@ func TestNullValueScan(t *testing.T) {
 	assert.NotNil(t, p2)
 	assert.Equal(t, "p2", *p2)
 }
+
+func TestBugFixVarchar(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_bug_fix_varchar", ` 
+  @p1 nvarchar(400)
+  as
+  select @p1
+  return`)
+	assert.Nil(t, err)
+
+	str := `{\"id\": \"ppf\", \"d\": \"FC Utrecht (ml) - Brabant United (ml) - zbroj golova 1.pol. (4,5) - vi\u0161e - 3,60, Achilles 29 (ml) - AZ Alkmaar (ml) - zbroj golova 1.pol. (0,5) - vi\u0161e - 1,40, VV/Helmond Sport (ml) - Roda JC (ml) - zbroj golova 1.pol. (1,5) - vi\u0161e - 1,65\"}`
+	_, err = conn.ExecSp("test_bug_fix_varchar", str)
+	assert.Nil(t, err)
+}

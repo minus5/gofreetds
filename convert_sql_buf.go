@@ -265,14 +265,28 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 			}
 			data = []byte(str)
 			datalen = len(data)
-			//set datalen for nvarchar and nchar datatypes
-			if (datatype == XSYBNCHAR) ||
-				(datatype == XSYBNVARCHAR && !freetdsVersionGte095) {
-				runelen := utf8.RuneCountInString(str)
-				if runelen*2 > len(data) {
-					datalen = runelen * 2
+			if !freetdsVersionGte095 {
+				if datatype == XSYBNVARCHAR || datatype == XSYBNCHAR {
+					//FIXME - adding len bytes to the end of the buf
+					//        realy don't understand why this is necessary
+					//        come to this solution by try and error
+					l := len(data)
+					for i := 0; i < l; i++ {
+						data = append(data, byte(0))
+					}
+				}
+				datalen = len(data)
+			} else {
+				//set datalen for nvarchar and nchar datatypes
+				if datatype == XSYBNCHAR {
+					runelen := utf8.RuneCountInString(str)
+					if runelen*2 > len(data) {
+						datalen = runelen * 2
+					}
 				}
 			}
+			//fmt.Printf("data %s\n", str)
+			//fmt.Printf("datalen %d %d %v %d %v %d\n", datalen, len(data), freetdsVersionGte095, datatype, datatype == XSYBNVARCHAR && !freetdsVersionGte095, utf8.RuneCountInString(str))
 			return
 		} else {
 			err = errors.New(fmt.Sprintf("Could not convert %T to string.", value))
