@@ -395,7 +395,7 @@ func (conn *Conn) setDefaults() error {
 		_, err = conn.exec(`
         set quoted_identifier on
         set ansi_warnings on
-        set ansi_padding off
+        set ansi_padding on
         set concat_null_yields_null on
 	   	`)
 		if err != nil {
