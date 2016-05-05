@@ -65,7 +65,7 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 	lastMessage = msg
 	conn := getConnection(int64(dbprocAddr))
 	if conn != nil {
-		conn.addMessage(msg)
+		conn.addMessage(msg, int(msgno))
 	}
 
 	//fmt.Printf("msg: %s", msg)
