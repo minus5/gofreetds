@@ -136,7 +136,7 @@ func connectWithCredentials(crd *credentials) (*Conn, error) {
 		credentials:   *crd,
 		messageNums:   make(map[int]int),
 	}
-	err := conn.reconnect()
+	err := conn.Reconnect()
 	if err != nil {
 		return nil, err
 	}
@@ -268,7 +268,7 @@ func (conn *Conn) HasMessageNumber(msgno int) int {
 func (conn *Conn) Exec(sql string) ([]*Result, error) {
 	results, err := conn.exec(sql)
 	if err != nil && (conn.isDead() || conn.isMirrorSlave()) {
-		if err := conn.reconnect(); err != nil {
+		if err := conn.Reconnect(); err != nil {
 			return nil, err
 		}
 		results, err = conn.exec(sql)
@@ -277,7 +277,9 @@ func (conn *Conn) Exec(sql string) ([]*Result, error) {
 	return results, err
 }
 
-func (conn *Conn) reconnect() error {
+//Reconnect to the database, cleaning closing the existing connection
+//and switching to a Mirror Database if necessary.
+func (conn *Conn) Reconnect() error {
 	var err error
 	for i := 0; i < 2; i++ {
 		if conn.isMirrorMessage() {
