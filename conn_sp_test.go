@@ -286,7 +286,7 @@ func TestTimeSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_sp_time_sp_params", `@p1 datetime as
     insert into tm (tm) values(@p1)
-    select @p1, 123
+    select tm, 123 i from tm where id = scope_identity()
     return 0`)
 	assert.Nil(t, err)
 
@@ -297,11 +297,10 @@ func TestTimeSpParams(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, rst)
 		rst.Next()
-		rst.Scan(&tmOut, &i)
-		assert.Equal(t, tmIn.UTC(), tmOut.UTC())
-		if !tmIn.Equal(tmOut) {
-			t.Errorf("%s != %s", tmIn, tmOut)
-		}
+		err = rst.Scan(&tmOut, &i)
+		assert.Nil(t, err)
+		assert.WithinDuration(t, tmIn, tmOut, 4*time.Millisecond)
+		//fmt.Println("time", tmIn, tmOut)
 	}
 
 	f(time.Unix(1404856799, 0))
@@ -311,6 +310,18 @@ func TestTimeSpParams(t *testing.T) {
 	f(time.Unix(1404856799, 0).UTC())
 	f(time.Unix(1404856800, 0).UTC())
 	f(time.Unix(1404856801, 0).UTC())
+	f(time.Now())
+	var zt time.Time
+	f(zt)
+
+	now := time.Now()
+	data := &struct {
+		Tm time.Time
+		I  int
+	}{}
+	rst, err := conn.ExecSp("test_sp_time_sp_params", now)
+	rst.Scan(data)
+	assert.WithinDuration(t, now, data.Tm, 4*time.Millisecond)
 }
 
 func TestNewDateTypesParam(t *testing.T) {

@@ -208,6 +208,9 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 			if tm.Equal(sqlMaxTime) {
 				days = sqlMaxTimeDays
 				secs = sqlMaxTimeSec
+			} else if tm.IsZero() {
+				// Go zero time => mssql null
+				return
 			} else if tm.Equal(sqlMinTime) {
 				days = sqlMinTimeDays
 				secs = sqlMinTimeSec

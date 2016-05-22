@@ -59,7 +59,7 @@ drop table tm
 ;
 create table [dbo].[tm] (
 	[id] int NOT NULL IDENTITY(1, 1),
-	[tm] datetime
+	[tm] datetime null
 )`,
 }
 

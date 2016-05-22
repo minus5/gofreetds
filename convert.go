@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 var errNilPtr = errors.New("destination pointer is nil") // embedded in descriptive error
@@ -89,6 +90,8 @@ func convertAssign(dest, src interface{}) error {
 				return errNilPtr
 			}
 			*d = nil
+			return nil
+		case *time.Time:
 			return nil
 		}
 	}
