@@ -26,6 +26,12 @@ import "C"
 //Example:
 //  conn.ExecSp("sp_help", "authors")
 func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
+	if conn.isDead() || conn.isMirrorSlave() {
+		if err := conn.reconnect(); err != nil {
+			return nil, err
+		}
+	}
+
 	//hold references to data sent to the C code until the end of this function
 	//without this GC could remove something used later in C, and we will get SIGSEG
 	refHolder := make([]*[]byte, 0)
