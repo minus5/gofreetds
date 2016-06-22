@@ -173,6 +173,7 @@ func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 		spParams[i] = p
 	}
 
+	// TODO ovdje sam dobio panic
 	conn.spParamsCache[spName] = spParams
 	return spParams, nil
 }
