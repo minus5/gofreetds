@@ -31,6 +31,23 @@ func main() {
 		panic(err)
 	}
 	printResult(rst[0])
+
+	auId := "111-11-1111"
+
+	//insert row
+	rst, err = conn.ExecuteSql("insert into authors (au_id, au_lname, au_fname, contract) values (?, ?, ?, ?)",
+		auId, "Pero", "Zdero", 1)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("inserted %d row(s)\n", rst[0].RowsAffected)
+
+	//delete row
+	rst, err = conn.ExecuteSql("delete from authors where au_id = ?", auId)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("deleted %d row(s)\n", rst[0].RowsAffected)
 }
 
 func printResult(rst *freetds.Result) {
