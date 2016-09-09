@@ -155,7 +155,7 @@ type spParam struct {
 //Read stored procedure parameters.
 //Will cache params in connection or pool and reuse it.
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
-	if spParams, ok := conn.spParamsCache[spName]; ok {
+	if spParams, ok := conn.spParamsCache.Get(spName); ok {
 		return spParams, nil
 	}
 
@@ -184,6 +184,6 @@ order by parameter_id
 		spParams[i] = p
 	}
 
-	conn.spParamsCache[spName] = spParams
+	conn.spParamsCache.Set(spName, spParams)
 	return spParams, nil
 }

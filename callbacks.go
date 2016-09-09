@@ -30,7 +30,7 @@ func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
 	}
 	err += fmt.Sprintf("\n%s\n\n", C.GoString(dberrstr))
 
-	lastErrorMutex.Lock()	
+	lastErrorMutex.Lock()
 	lastError = err
 	lastErrorMutex.Unlock()
 
@@ -71,7 +71,7 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 	}
 	msg += fmt.Sprintf("%s\n", C.GoString(msgtext))
 
-	lastMessageMutex.Lock()	
+	lastMessageMutex.Lock()
 	lastMessage = msg
 	lastMessageMutex.Unlock()
 

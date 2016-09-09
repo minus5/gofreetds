@@ -93,7 +93,9 @@ type Conn struct {
 	currentResult   *Result
 	expiresFromPool time.Time
 	belongsToPool   *ConnPool
-	spParamsCache   map[string][]*spParam
+
+	spParamsCache *ParamsCache
+
 	credentials
 	freetdsVersionGte095 bool
 }
@@ -132,7 +134,7 @@ func NewConn(connStr string) (*Conn, error) {
 
 func connectWithCredentials(crd *credentials) (*Conn, error) {
 	conn := &Conn{
-		spParamsCache: make(map[string][]*spParam),
+		spParamsCache: NewParamsCache(),
 		credentials:   *crd,
 		messageNums:   make(map[int]int),
 	}
