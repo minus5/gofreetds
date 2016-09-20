@@ -2,6 +2,7 @@ package freetds
 
 import (
 	"fmt"
+	"sync"
 )
 
 /*
@@ -10,7 +11,11 @@ import (
 */
 import "C"
 
-var lastError, lastMessage string
+var lastError string
+var lastErrorMutex sync.Mutex
+
+var lastMessage string
+var lastMessageMutex sync.Mutex
 
 //export errHandler
 func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserrstr *C.char) C.int {
@@ -25,11 +30,15 @@ func errHandler(dbprocAddr C.long, severity, dberr, oserr C.int, dberrstr, oserr
 	}
 	err += fmt.Sprintf("\n%s\n\n", C.GoString(dberrstr))
 
+	lastErrorMutex.Lock()
 	lastError = err
+	lastErrorMutex.Unlock()
+
 	conn := getConnection(int64(dbprocAddr))
 	if conn != nil {
 		conn.addError(err)
 	}
+
 	//fmt.Printf("err: %s", err)
 	return C.INT_CANCEL
 }
@@ -62,10 +71,13 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 	}
 	msg += fmt.Sprintf("%s\n", C.GoString(msgtext))
 
+	lastMessageMutex.Lock()
 	lastMessage = msg
+	lastMessageMutex.Unlock()
+
 	conn := getConnection(int64(dbprocAddr))
 	if conn != nil {
-		conn.addMessage(msg)
+		conn.addMessage(msg, int(msgno))
 	}
 
 	//fmt.Printf("msg: %s", msg)

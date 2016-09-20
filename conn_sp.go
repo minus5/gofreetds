@@ -26,6 +26,12 @@ import "C"
 //Example:
 //  conn.ExecSp("sp_help", "authors")
 func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error) {
+	if conn.isDead() || conn.isMirrorSlave() {
+		if err := conn.reconnect(); err != nil {
+			return nil, err
+		}
+	}
+
 	//hold references to data sent to the C code until the end of this function
 	//without this GC could remove something used later in C, and we will get SIGSEG
 	refHolder := make([]*[]byte, 0)
@@ -148,7 +154,7 @@ type spParam struct {
 //Read stored procedure parameters.
 //Will cache params in connection or pool and reuse it.
 func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
-	if spParams, ok := conn.spParamsCache[spName]; ok {
+	if spParams, ok := conn.spParamsCache.Get(spName); ok {
 		return spParams, nil
 	}
 
@@ -173,8 +179,7 @@ func (conn *Conn) getSpParams(spName string) ([]*spParam, error) {
 		spParams[i] = p
 	}
 
-	// TODO ovdje sam dobio panic
-	conn.spParamsCache[spName] = spParams
+	conn.spParamsCache.Set(spName, spParams)
 	return spParams, nil
 }
 

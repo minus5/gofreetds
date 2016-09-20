@@ -2,12 +2,12 @@ package freetds
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`
@@ -458,4 +458,33 @@ func TestExecuteSqlNullString(t *testing.T) {
 	var str *string
 	_, err := c.ExecuteSql("update dbo.freetds_types set nvarchar_max=? where int = 3", str)
 	assert.Nil(t, err)
+}
+
+// Also run with "go test --race" for race condition checking.
+func TestMessageNumbers(t *testing.T) {
+	const msgnumOne = 123
+	const msgnumTwo = 456
+
+	c := &Conn{
+		messageNums: make(map[int]int),
+	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		c.addMessage("alpha", msgnumOne)
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
+		c.addMessage("beta", msgnumOne)
+		c.addMessage("delta", msgnumTwo)
+		wg.Done()
+	}()
+
+	wg.Wait()
+	assert.Equal(t, c.HasMessageNumber(msgnumOne), 2)
+	assert.Equal(t, c.HasMessageNumber(msgnumTwo), 1)
 }
