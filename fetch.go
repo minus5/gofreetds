@@ -40,12 +40,13 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			}
 			bindTyp, typ := dbbindtype(typ)
 			result.addColumn(name, int(size), int(typ))
-			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ {
+			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ && XSYBXML != typ {
 				size = C.DBINT(C.dbwillconvert(typ, C.SYBCHAR))
 			}
 			col := &columns[i]
 			// detecting varchar(max) or varbinary(max) types
 			col.canVary = (size == 2147483647 && typ == SYBCHAR) ||
+				(size == 2147483647 && typ == XSYBXML) ||
 				(size == 1073741823 && typ == SYBBINARY)
 			col.name = name
 			col.typ = int(typ)
