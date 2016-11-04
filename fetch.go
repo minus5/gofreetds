@@ -68,7 +68,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 		}
 
 		for i := 0; ; i++ {
-			switch rowCode := C.dbnextrow(conn.dbproc); rowCode {
+			switch C.dbnextrow(conn.dbproc) {
 			case C.NO_MORE_ROWS:
 				break
 			case C.BUF_FULL:
