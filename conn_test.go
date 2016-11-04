@@ -19,12 +19,12 @@ create table freetds_types (
   long bigint null,
   smallint smallint null,
   tinyint tinyint null,
-  varchar varchar(255) null,
-  nvarchar nvarchar(255) null,
-  char char(255) null,
-  nchar nchar(255) null,
-  text text null,
-  ntext ntext null,
+  varchar varchar(255) COLLATE latin1_general_ci_as null ,
+  nvarchar nvarchar(255) COLLATE latin1_general_ci_as null,
+  char char(255) COLLATE latin1_general_ci_as null,
+  nchar nchar(255) COLLATE latin1_general_ci_as null,
+  text text COLLATE latin1_general_ci_as null,
+  ntext ntext COLLATE latin1_general_ci_as null,
   datetime datetime null,
   smalldatetime smalldatetime null,
   money money null,
@@ -34,17 +34,17 @@ create table freetds_types (
   bit bit null,
   timestamp timestamp null,
   binary binary(10) null,
-  nvarchar_max nvarchar(max) null,
-  varchar_max varchar(max) null,
+  nvarchar_max nvarchar(max) COLLATE latin1_general_ci_as null,
+  varchar_max varchar(max) COLLATE latin1_general_ci_as null,
   varbinary_max varbinary(max) null
 )
 ;
 
 insert into freetds_types (int, long, smallint, tinyint, varchar, nvarchar, char, nchar, text, ntext, datetime, smalldatetime, money, smallmoney, real, float, bit, binary)
-values (2147483647,   9223372036854775807, 32767, 255, 'išo medo u dućan   ','išo medo u dućan    2','išo medo u dućan    3','išo medo u dućan    4','išo medo u dućan    5','išo medo u dućan    6', '1972-08-08T10:11:12','1972-08-08T10:11:12', 1234.5678,   1234.5678,  1234.5678,  1234.5678, 0, 0x123567890)
+values (2147483647,   9223372036854775807, 32767, 255, 'išo medo u dućan   ',N'išo medo u dućan    2','išo medo u dućan    3',N'išo medo u dućan    4','išo medo u dućan    5',N'išo medo u dućan    6', '1972-08-08T10:11:12','1972-08-08T10:11:12', 1234.5678,   1234.5678,  1234.5678,  1234.5678, 0, 0x123567890)
 
 insert into freetds_types (int, long, smallint, tinyint, varchar, nvarchar, char, nchar, text, ntext, datetime, smalldatetime, money, smallmoney, real, float, bit, binary)
-values (-2147483648, -9223372036854775808, -32768,  0, 'nije reko dobar dan','nije reko dobar dan 2','nije reko dobar dan 3','nije reko dobar dan 4','nije reko dobar dan 5','nije reko dobar dan 6', '1998-10-10T16:17:18','1998-10-10T16:17:18', -1234.5678, -1234.5678, -1234.5678, -1234.5678, 1, 0x0987654321abcd)
+values (-2147483648, -9223372036854775808, -32768,  0, 'nije reko dobar dan',N'nije reko dobar dan 2','nije reko dobar dan 3',N'nije reko dobar dan 4','nije reko dobar dan 5',N'nije reko dobar dan 6', '1998-10-10T16:17:18','1998-10-10T16:17:18', -1234.5678, -1234.5678, -1234.5678, -1234.5678, 1, 0x0987654321abcd)
 
 insert into freetds_types (int) values (3)
 `, `
@@ -134,7 +134,7 @@ func TestReadingTextNtext(t *testing.T) {
 	defer conn.Close()
 	results, err := conn.Exec(`select top 2 text, ntext from dbo.freetds_types`)
 	assert.Nil(t, err)
-	assert.Equal(t, "išo medo u dućan    5", results[0].Rows[0][0])
+	assert.Equal(t, "išo medo u ducan    5", results[0].Rows[0][0])
 	assert.Equal(t, "išo medo u dućan    6", results[0].Rows[0][1])
 	assert.Equal(t, "nije reko dobar dan 5", results[0].Rows[1][0])
 	assert.Equal(t, "nije reko dobar dan 6", results[0].Rows[1][1])
