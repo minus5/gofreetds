@@ -47,6 +47,10 @@ import (
   dbsetlname(login, "UTF-8", DBSETCHARSET);
  }
 
+ static void my_dblogin_setdb(LOGINREC* login, char* dbname) {
+  DBSETLDBNAME(login, dbname);
+ }
+
  static void my_setlversion(LOGINREC* login) {
   dbsetlversion(login, DBVERSION_72);
  }
@@ -156,10 +160,6 @@ func (conn *Conn) connect() (*Conn, error) {
 	conn.dbproc = dbproc
 	conn.addr = int64(C.dbproc_addr(dbproc))
 	addConnection(conn)
-	if err := conn.DbUse(); err != nil {
-		conn.close()
-		return nil, err
-	}
 	if err := conn.setDefaults(); err != nil {
 		conn.close()
 		return nil, err
@@ -207,6 +207,16 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	cpwd := C.CString(conn.pwd)
 	defer C.free(unsafe.Pointer(cpwd))
 	C.my_dblogin(login, cuser, cpwd)
+
+	// If a database name is specified in the connection string,
+	// add the DB name to the login packet.
+	// Needed for Azure SQL Database, which does not support the USE command
+	// Supported by FreeTDS 0.91 and later
+	if len(conn.database) > 0 {
+		cdatabase := C.CString(conn.database)
+		defer C.free(unsafe.Pointer(cdatabase))
+		C.my_dblogin_setdb(login, cdatabase)
+	}
 
 	// Added for Sybase compatibility mode
 	// Version cannot be set to 7.2
