@@ -68,11 +68,14 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 		}
 
 		for i := 0; ; i++ {
-			rowCode := C.dbnextrow(conn.dbproc)
-			if rowCode == C.NO_MORE_ROWS {
+			switch rowCode := C.dbnextrow(conn.dbproc); rowCode {
+			case C.NO_MORE_ROWS:
 				break
-			}
-			if rowCode == C.REG_ROW {
+			case C.BUF_FULL:
+				return nil, errors.New("dbnextrow failed: Buffer Full")
+			case C.FAIL:
+				return nil, errors.New("dbnextrow failed: Failure")
+			case C.REG_ROW:
 				for j := 0; j < cols; j++ {
 					col := columns[j]
 					//fmt.Printf("col: %#v\nvalue:%s\n", col, col.Value())
@@ -110,6 +113,8 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 
 					result.addValue(i, j, col.Value())
 				}
+			default:
+				// Continue looping
 			}
 		}
 
