@@ -344,7 +344,7 @@ func TestNewDateTypesParam(t *testing.T) {
 	var dt time.Time
 	err = rst.Scan(&dt, &op1, &op2, &op3, &op4)
 	assert.Nil(t, err)
-	assert.Equal(t, "2025-12-10T12:32:10+01:00", dt.Format(time.RFC3339))
+	assert.Equal(t, "Wed Dec 10 12:32:10 2025", dt.Format(time.ANSIC)) //ANSIC format makes test independent of the time zone in which the test is run
 	assert.Equal(t, "2025-12-10 12:32:10.1237000 +01:00", op1)
 	assert.Equal(t, "2025-12-10", op2)
 	assert.Equal(t, "12:30:00.0000000", op3)
