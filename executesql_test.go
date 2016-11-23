@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const(
+const (
 	sqlDateTimeOffSet = "2006-01-02T15:04:05-07:00"
 )
 
@@ -31,7 +31,7 @@ func TestGoTo2SqlDataType2(t *testing.T) {
 	tm := time.Unix(1136239445, 0)
 	paris, _ := time.LoadLocation("Europe/Paris")
 
-	checker(tm.In(paris), "datetimeoffset", "'" + tm.In(paris).Format(sqlDateTimeOffSet) +"'")
+	checker(tm.In(paris), "datetimeoffset", "'"+tm.In(paris).Format(sqlDateTimeOffSet)+"'")
 
 	checker([]byte{1, 2, 3, 4, 5, 6, 7, 8}, "varbinary (8)", "0x0102030405060708")
 
@@ -75,7 +75,7 @@ func TestGoTo2SqlDataType(t *testing.T) {
 	tm := time.Unix(1136239445, 0)
 	paris, _ := time.LoadLocation("Europe/Paris")
 
-	checker(tm.In(paris), "datetimeoffset", "'" + tm.In(paris).Format(sqlDateTimeOffSet) +"'")
+	checker(tm.In(paris), "datetimeoffset", "'"+tm.In(paris).Format(sqlDateTimeOffSet)+"'")
 
 	checker([]byte{1, 2, 3, 4, 5, 6, 7, 8}, "varbinary (8)", "0x0102030405060708")
 
