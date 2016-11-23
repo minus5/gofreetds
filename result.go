@@ -43,11 +43,23 @@ func (r *Result) addValue(row, col int, value interface{}) {
 	r.Rows[row][col] = value
 }
 
-func (r *Result) Next() bool {
+// CurrentRow() returns current row (set by Next()).
+// Returns -1 as an error if Next() wasn't called.
+func (r *Result) CurrentRow() int {
+	return r.currentRow
+}
+
+// HasNext returns true if we have more rows to process.
+func (r *Result) HasNext() bool {
 	if len(r.Rows) == 0 {
 		return false
 	}
-	if r.currentRow >= len(r.Rows)-1 {
+	return r.currentRow < len(r.Rows)-1
+}
+
+// Advances to the next row. Returns false if there is no more rows (i.e. we are on the last row).
+func (r *Result) Next() bool {
+	if !r.HasNext() {
 		return false
 	}
 	r.currentRow++

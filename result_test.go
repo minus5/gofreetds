@@ -57,6 +57,25 @@ func TestResultScan(t *testing.T) {
 	assert.Equal(t, f, float64(123.45))
 }
 
+func TestResultCurrentRow(t *testing.T) {
+	r := testResult()
+	assert.Equal(t, -1, r.CurrentRow())
+	assert.True(t, r.Next())
+	assert.Equal(t, 0, r.CurrentRow())
+}
+
+func TestResultHasNext(t *testing.T) {
+	r := testResult()
+	assert.Equal(t, len(r.Rows), 3)
+	assert.True(t, r.Next())
+	assert.True(t, r.HasNext())
+	assert.True(t, r.Next())
+	assert.True(t, r.HasNext())
+	assert.True(t, r.Next())
+	assert.False(t, r.Next())
+	assert.False(t, r.HasNext())
+}
+
 func TestResultNext(t *testing.T) {
 	r := testResult()
 	assert.Equal(t, len(r.Rows), 3)
