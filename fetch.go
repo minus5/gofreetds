@@ -67,7 +67,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			}
 		}
 
-		rows_loop:
+	rows_loop:
 		for i := 0; ; i++ {
 			switch C.dbnextrow(conn.dbproc) {
 			case C.NO_MORE_ROWS:
