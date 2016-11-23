@@ -22,6 +22,7 @@ const (
 	SYBNVARCHAR  = 103 //nvarchar      string
 	XSYBNVARCHAR = 231 //nvarchar      string
 	XSYBNCHAR    = 239 //nchar         string
+	XSYBXML      = 241 //XML           string
 
 	SYBREAL = 59 //real          float32
 	SYBFLT8 = 62 //float(53)     float64
