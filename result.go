@@ -43,13 +43,6 @@ func (r *Result) addValue(row, col int, value interface{}) {
 	r.Rows[row][col] = value
 }
 
-type ResultColumn struct {
-	Name   string
-	DbSize int
-	DbType int
-	Type   string
-}
-
 func (r *Result) Next() bool {
 	if len(r.Rows) == 0 {
 		return false
