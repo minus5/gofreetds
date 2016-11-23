@@ -102,6 +102,42 @@ func (r *Result) MustScan(cnt int, dest ...interface{}) error {
 	return nil
 }
 
+// FindColumn returns an index of a column, found by name.
+// Returns error if the column isn't found.
+func (r *Result) FindColumn(name string) (int, error) {
+	// TODO: do we need to optimize this using an map[column_name]index? (and use it in other helpers?)
+	for i, col := range r.Columns {
+		if name == col.Name {
+			return i, nil
+		}
+	}
+	return -1, fmt.Errorf("FindColumn('%s'): column not found in result", name)
+}
+
+// Find column with given name and scan it's value to the result.
+// Returns error if the column isn't found, otherwise returns error if the scan fails.
+func (r *Result) ScanColumn(name string, dest interface{}) error {
+	if r.currentRow == -1 {
+		return errors.New("ScanColumn called without calling Next.")
+	}
+
+	if !isPointer(dest) {
+		return errors.New("Destination not a pointer.")
+	}
+
+	i, err := r.FindColumn(name)
+	if err != nil {
+		return err
+	}
+
+	err = convertAssign(dest, r.Rows[r.currentRow][i])
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //Copies values for the current row to the structure.
 //Struct filed name must match database column name.
 func (r *Result) scanStruct(s *reflect.Value) error {

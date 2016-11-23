@@ -92,7 +92,7 @@ func TestResultScanWithoutNext(t *testing.T) {
 	var tm time.Time
 	var f float64
 	err := r.Scan(&i, &s, &tm, &f)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestResultScanOnNonPointerValues(t *testing.T) {
@@ -103,7 +103,7 @@ func TestResultScanOnNonPointerValues(t *testing.T) {
 	var f float64
 	assert.True(t, r.Next())
 	err := r.Scan(&i, &s, &tm, f)
-	assert.NotNil(t, err) //error is raised
+	assert.Error(t, err)
 }
 
 func TestResultScanIntoStruct(t *testing.T) {
@@ -126,7 +126,7 @@ func TestResultScanIntoStruct(t *testing.T) {
 	err = r.MustScan(4, &s)
 	assert.Nil(t, err)
 	err = r.MustScan(5, &s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
@@ -151,4 +151,36 @@ func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
 
 	assert.Equal(t, s.Float32, 5.5)
 	assert.EqualValues(t, s.Float64, 6.5)
+}
+
+func TestResultScanColumn(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("s", &s)
+	assert.Nil(t, err)
+	assert.Equal(t, "two", s)
+}
+
+func TestResultScanColumnWithoutNext(t *testing.T) {
+	r := testResult()
+	var s string
+	err := r.ScanColumn("s", &s)
+	assert.Error(t, err)
+}
+
+func TestResultScanColumnOnNonPointerValues(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("s", s)
+	assert.Error(t, err)
+}
+
+func TestResultScanColumnMissing(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("non_existing", &s)
+	assert.Error(t, err)
 }
