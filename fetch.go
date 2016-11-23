@@ -67,10 +67,11 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			}
 		}
 
+	rows_loop:
 		for i := 0; ; i++ {
 			switch C.dbnextrow(conn.dbproc) {
 			case C.NO_MORE_ROWS:
-				break
+				break rows_loop
 			case C.BUF_FULL:
 				return nil, errors.New("dbnextrow failed: Buffer Full")
 			case C.FAIL:
