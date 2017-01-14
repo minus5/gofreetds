@@ -13,7 +13,8 @@ const (
 
 func TestGoTo2SqlDataType2(t *testing.T) {
 	var checker = func(value interface{}, sqlType string, sqlFormatedValue string) {
-		actualSqlType, actualSqlFormatedValue := go2SqlDataType(value)
+		actualSqlType, actualSqlFormatedValue, err := go2SqlDataType(value)
+		assert.Nil(t, err)
 		assert.Equal(t, actualSqlType, sqlType)
 		assert.Equal(t, actualSqlFormatedValue, sqlFormatedValue)
 	}
@@ -58,7 +59,8 @@ func TestQuery2Statement(t *testing.T) {
 
 func TestGoTo2SqlDataType(t *testing.T) {
 	var checker = func(value interface{}, sqlType string, sqlFormatedValue string) {
-		actualSqlType, actualSqlFormatedValue := go2SqlDataType(value)
+		actualSqlType, actualSqlFormatedValue, err := go2SqlDataType(value)
+		assert.Nil(t, err)
 		assert.Equal(t, actualSqlType, sqlType)
 		assert.Equal(t, actualSqlFormatedValue, sqlFormatedValue)
 	}
@@ -92,7 +94,8 @@ func TestExecuteSqlNumberOfParams(t *testing.T) {
 }
 
 func TestParseParams(t *testing.T) {
-	def, val := parseParams(1, 2, "pero")
+	def, val, err := parseParams(1, 2, "pero")
+	assert.Nil(t, err)
 	assert.Equal(t, def, "@p1 int, @p2 int, @p3 nvarchar (4)")
 	assert.Equal(t, val, "@p1=1, @p2=2, @p3='pero'")
 }

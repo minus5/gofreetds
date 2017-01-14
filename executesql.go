@@ -3,7 +3,6 @@ package freetds
 import (
 	"database/sql/driver"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
@@ -21,7 +20,10 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 	if numParams != len(params) {
 		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
 	}
-	paramDef, paramVal := parseParams(params...)
+	paramDef, paramVal, err := parseParams(params...)
+	if err != nil {
+		return nil, err
+	}
 	statement += statusRow
 	sql := fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
 	if numParams == 0 {
@@ -46,27 +48,30 @@ func query2Statement(query string) (string, int) {
 	return quote(statement), numParams
 }
 
-func parseParams(params ...driver.Value) (paramDef, paramVal string) {
-	paramDef = ""
-	paramVal = ""
+func parseParams(params ...driver.Value) (string, string, error) {
+	paramDef := ""
+	paramVal := ""
 	for i, param := range params {
 		if i > 0 {
 			paramVal += ", "
 			paramDef += ", "
 		}
-		sqlType, sqlValue := go2SqlDataType(param)
+		sqlType, sqlValue, err := go2SqlDataType(param)
+		if err != nil {
+			return "", "", err
+		}
 		paramName := fmt.Sprintf("@p%d", i+1)
 		paramDef += fmt.Sprintf("%s %s", paramName, sqlType)
 		paramVal += fmt.Sprintf("%s=%s", paramName, sqlValue)
 	}
-	return
+	return paramDef, paramVal, nil
 }
 
 func quote(in string) string {
 	return strings.Replace(in, "'", "''", -1)
 }
 
-func go2SqlDataType(value interface{}) (string, string) {
+func go2SqlDataType(value interface{}) (string, string, error) {
 	max := func(a int, b int) int {
 		if a > b {
 			return a
@@ -81,35 +86,35 @@ func go2SqlDataType(value interface{}) (string, string) {
 		if strValue == "true" {
 			bitStrValue = "1"
 		}
-		return "bit", bitStrValue
+		return "bit", bitStrValue, nil
 	case uint8, int8:
-		return "tinyint", strValue
+		return "tinyint", strValue, nil
 	case uint16, int16:
-		return "smallint", strValue
+		return "smallint", strValue, nil
 	case uint32, int32, int:
-		return "int", strValue
+		return "int", strValue, nil
 	case uint64, int64:
-		return "bigint", strValue
+		return "bigint", strValue, nil
 	case float32, float64:
-		return "real", strValue
+		return "real", strValue, nil
 	case string:
 		{
 		}
 	case time.Time:
 		{
 			strValue = t.Format(time.RFC3339Nano)
-			return "datetimeoffset", fmt.Sprintf("'%s'", quote(strValue))
+			return "datetimeoffset", fmt.Sprintf("'%s'", quote(strValue)), nil
 		}
 	case []byte:
 		{
 			b, _ := value.([]byte)
 			return fmt.Sprintf("varbinary (%d)", max(1, len(b))),
-				fmt.Sprintf("0x%x", b)
+				fmt.Sprintf("0x%x", b), nil
 		}
 	default:
-		log.Printf("unknown dataType %T", t)
+		return "", "", fmt.Errorf("unknown dataType %T", t)
 	}
 	return fmt.Sprintf("nvarchar (%d)", max(1, len(strValue))),
-		fmt.Sprintf("'%s'", quote(strValue))
+		fmt.Sprintf("'%s'", quote(strValue)), nil
 
 }

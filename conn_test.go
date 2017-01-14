@@ -2,12 +2,13 @@ package freetds
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var CREATE_DB_SCRIPTS = [...]string{`
@@ -453,11 +454,17 @@ func TestTypes(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestExecuteSqlNullString(t *testing.T) {
+func TestUnknownDataTypeInExecuteSql(t *testing.T) {
 	c := ConnectToTestDb(t)
 	var str *string
 	_, err := c.ExecuteSql("update dbo.freetds_types set nvarchar_max=? where int = 3", str)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "unknown dataType *string")
+
+	var l *int
+	_, err = c.ExecuteSql("update dbo.freetds_types set long=? where int = 3", l)
+	assert.NotNil(t, err)
+	assert.EqualError(t, err, "unknown dataType *int")
 }
 
 // Also run with "go test --race" for race condition checking.
