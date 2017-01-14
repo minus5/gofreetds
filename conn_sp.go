@@ -57,6 +57,7 @@ func (conn *Conn) ExecSp(spName string, params ...interface{}) (*SpResult, error
 			if param != nil {
 				data, sqlDatalen, err := typeToSqlBuf(int(spParam.UserTypeId), param, conn.freetdsVersionGte095)
 				if err != nil {
+					conn.Close() //close the connection
 					return nil, err
 				}
 				if len(data) > 0 {
