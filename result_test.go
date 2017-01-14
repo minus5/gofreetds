@@ -57,6 +57,25 @@ func TestResultScan(t *testing.T) {
 	assert.Equal(t, f, float64(123.45))
 }
 
+func TestResultCurrentRow(t *testing.T) {
+	r := testResult()
+	assert.Equal(t, -1, r.CurrentRow())
+	assert.True(t, r.Next())
+	assert.Equal(t, 0, r.CurrentRow())
+}
+
+func TestResultHasNext(t *testing.T) {
+	r := testResult()
+	assert.Equal(t, len(r.Rows), 3)
+	assert.True(t, r.Next())
+	assert.True(t, r.HasNext())
+	assert.True(t, r.Next())
+	assert.True(t, r.HasNext())
+	assert.True(t, r.Next())
+	assert.False(t, r.Next())
+	assert.False(t, r.HasNext())
+}
+
 func TestResultNext(t *testing.T) {
 	r := testResult()
 	assert.Equal(t, len(r.Rows), 3)
@@ -73,7 +92,7 @@ func TestResultScanWithoutNext(t *testing.T) {
 	var tm time.Time
 	var f float64
 	err := r.Scan(&i, &s, &tm, &f)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestResultScanOnNonPointerValues(t *testing.T) {
@@ -84,7 +103,7 @@ func TestResultScanOnNonPointerValues(t *testing.T) {
 	var f float64
 	assert.True(t, r.Next())
 	err := r.Scan(&i, &s, &tm, f)
-	assert.NotNil(t, err) //error is raised
+	assert.Error(t, err)
 }
 
 func TestResultScanIntoStruct(t *testing.T) {
@@ -107,7 +126,7 @@ func TestResultScanIntoStruct(t *testing.T) {
 	err = r.MustScan(4, &s)
 	assert.Nil(t, err)
 	err = r.MustScan(5, &s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
@@ -132,4 +151,36 @@ func TestScanTypesInStructDoesNotMatchThoseInResult(t *testing.T) {
 
 	assert.Equal(t, s.Float32, 5.5)
 	assert.EqualValues(t, s.Float64, 6.5)
+}
+
+func TestResultScanColumn(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("s", &s)
+	assert.Nil(t, err)
+	assert.Equal(t, "two", s)
+}
+
+func TestResultScanColumnWithoutNext(t *testing.T) {
+	r := testResult()
+	var s string
+	err := r.ScanColumn("s", &s)
+	assert.Error(t, err)
+}
+
+func TestResultScanColumnOnNonPointerValues(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("s", s)
+	assert.Error(t, err)
+}
+
+func TestResultScanColumnMissing(t *testing.T) {
+	r := testResult()
+	assert.True(t, r.Next())
+	var s string
+	err := r.ScanColumn("non_existing", &s)
+	assert.Error(t, err)
 }
