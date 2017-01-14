@@ -105,7 +105,6 @@ func (r *Result) MustScan(cnt int, dest ...interface{}) error {
 // FindColumn returns an index of a column, found by name.
 // Returns error if the column isn't found.
 func (r *Result) FindColumn(name string) (int, error) {
-	// TODO: do we need to optimize this using an map[column_name]index? (and use it in other helpers?)
 	for i, col := range r.Columns {
 		if name == col.Name {
 			return i, nil
