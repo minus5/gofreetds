@@ -111,7 +111,7 @@ rst, err := conn.ExecuteSql("select au_id, au_lname, au_fname from authors where
 
 ## Sybase Compatibility Mode
 
-Gofreetds now supports Sybase ASE 16.0 through the driver. In order to support this, this post is very helpful: [Connect to MS SQL Server and Sybase ASE from Mac OS X and Linux with unixODBC and FreeTDS](http://2tbsp.com/articles/2012/06/08/connect-ms-sql-server-and-sybase-ase-mac-os-x-and-linux-unixodbc-and-freetds)
+Gofreetds now supports Sybase ASE 16.0 through the driver. In order to support this, this post is very helpful: [Connect to MS SQL Server and Sybase ASE from Mac OS X and Linux with unixODBC and FreeTDS (from Internet Archive)](http://web.archive.org/web/20160325095720/http://2tbsp.com/articles/2012/06/08/connect-ms-sql-server-and-sybase-ase-mac-os-x-and-linux-unixodbc-and-freetds)
 
 To use a Sybase ASE server with Gofreetds, you simply need to set a compatibility mode on your connection string after you've configured your .odbc.ini file and .freetds.conf file.
 
