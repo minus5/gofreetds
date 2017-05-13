@@ -71,6 +71,21 @@ func TestExecSpInputParamsTypes(t *testing.T) {
 	assert.Equal(t, 6, p6)
 }
 
+func TestMoneyRead(t *testing.T) {
+	conn := ConnectToTestDb(t)
+	err := createProcedure(conn, "test_input_params_money", `
+       @p1 money as
+       select @p1`)
+	assert.Nil(t, err)
+	rst, err := conn.ExecSp("test_input_params_money", 2.6390)
+	assert.Nil(t, err)
+	var p1 float64
+	rst.Scan(&p1)
+	assert.Equal(t, 2.6390, p1)
+	// f64 := 2.63899999999999999999
+	// fmt.Println(int64(f64*10000), int64(f64*100000)/10)
+}
+
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
 	err := createProcedure(conn, "test_input_params2", `
@@ -417,25 +432,20 @@ func TestExecSpBadParameterDataType(t *testing.T) {
 	select @p1
 	return`)
 	assert.Nil(t, err)
-	
+
 	err = createProcedure(conn, "test_bad_parameter_data_type2", " as select 1 one; select 2 two; return 456")
 	assert.Nil(t, err)
 
-	
 	var intval int16
 	intval = 1
 	_, err = conn.ExecSp("test_bad_parameter_data_type", intval)
 	expectedError := "Could not convert int16 to string."
 	assert.Equal(t, expectedError, err.Error())
-	
+
 	_, err = conn.ExecSp("test_bad_parameter_data_type", "test")
-	assert.Nil(t, err)	
+	assert.Nil(t, err)
 
 	_, err = conn.ExecSp("test_bad_parameter_data_type2")
-	assert.Nil(t, err)	
-	
+	assert.Nil(t, err)
+
 }
-
-
-
-
