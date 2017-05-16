@@ -186,13 +186,14 @@ func typeToSqlBuf(datatype int, value interface{}, freetdsVersionGte095 bool) (d
 	case SYBMONEY4:
 		var f64 float64
 		if err = convertAssign(&f64, value); err == nil {
-			i32 := int32(int64(f64*100000) / 10)
+			intValue := int64((f64 + 0.000000000000001) * 10000)
+			i32 := int32(intValue)
 			err = binary.Write(buf, binary.LittleEndian, i32)
 		}
 	case SYBMONEY:
 		var f64 float64
 		if err = convertAssign(&f64, value); err == nil {
-			intValue := int64(f64*100000) / 10
+			intValue := int64((f64 + 0.000000000000001) * 10000)
 			high := int32(intValue >> 32)
 			low := uint32(intValue - int64(high))
 			err = binary.Write(buf, binary.LittleEndian, high)
