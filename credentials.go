@@ -10,11 +10,12 @@ type credentials struct {
 	maxPoolSize, lockTimeout                             int
 }
 
+// NewCredentials fills credentials stusct from connection string
 func NewCredentials(connStr string) *credentials {
 	parts := strings.Split(connStr, ";")
 	crd := &credentials{maxPoolSize: 100}
 	for _, part := range parts {
-		kv := strings.Split(part, "=")
+		kv := strings.SplitN(part, "=", 2)
 		if len(kv) == 2 {
 			key := strings.ToLower(strings.Trim(kv[0], " "))
 			value := kv[1]

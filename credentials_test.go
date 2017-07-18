@@ -53,3 +53,25 @@ func TestParseConnectionStringCompatibilityMode(t *testing.T) {
 		assert.Equal(t, expected, crd.compatibility)
 	}
 }
+
+// TestParseConnectionStringEqualsInValue tests parsing when for e.g. password contains "="
+func TestParseConnectionStringEqualsInValue(t *testing.T) {
+	validConnStrings := []string{
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=my=Password;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000",
+		"Server=myServerAddress;Database=myDataBase;User_Id=myUsername;Password=my=Password;Failover_Partner=myMirror;Max_Pool_Size=200;Lock_Timeout=1000",
+		"server=myServerAddress;database=myDataBase;user_id=myUsername;password=my=Password;failover_partner=myMirror;max_pool_size=200;lock_timeout=1000",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=my=Password;mirror=myMirror;max_pool_size=200;lock_timeout=1000",
+		"host=myServerAddress;database=myDataBase;user=myUsername;pwd=my=Password;mirror=myMirror;max_pool_size=200;lock_timeout=1000",
+	}
+	for _, connStr := range validConnStrings {
+		crd := NewCredentials(connStr)
+		assert.NotNil(t, crd)
+		assert.Equal(t, "myServerAddress", crd.host)
+		assert.Equal(t, "myDataBase", crd.database)
+		assert.Equal(t, "myUsername", crd.user)
+		assert.Equal(t, "my=Password", crd.pwd)
+		assert.Equal(t, "myMirror", crd.mirrorHost)
+		assert.Equal(t, 200, crd.maxPoolSize)
+		assert.Equal(t, 1000, crd.lockTimeout)
+	}
+}
