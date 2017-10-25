@@ -116,6 +116,9 @@ func (r *MssqlResult) statusRowValue(columnName string) int64 {
 		if val, ok := lastResult.Rows[0][idx].(int64); ok {
 			return val
 		}
+		if val, ok := lastResult.Rows[0][idx].(float64); ok {
+			return int64(val)
+		}
 	}
 	return -1
 }
