@@ -163,9 +163,9 @@ func TestTransRollback(t *testing.T) {
 
 func TestBlobs(t *testing.T) {
 	db, _ := open()
-	createTestTable(t, db, "test_blobs", "id int identity, blob varbinary(16)")
+	createTestTable(t, db, "test_blobs", "id int identity, blob varbinary(16), blob2 varbinary(MAX)")
 	want := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
-	_, err := db.Exec("insert into test_blobs values(?)", want)
+	_, err := db.Exec("insert into test_blobs values(?, ?)", want, want)
 	assert.Nil(t, err)
 
 	var got []byte
@@ -175,6 +175,15 @@ func TestBlobs(t *testing.T) {
 
 	strWant := fmt.Sprintf("%x", want)
 	strGot := fmt.Sprintf("%x", got)
+	assert.Equal(t, strWant, strGot)
+	assert.Equal(t, want, got)
+
+	err = db.QueryRow("select blob2 from test_blobs").Scan(&got)
+	assert.Nil(t, err)
+	assert.Equal(t, 16, len(got))
+
+	strWant = fmt.Sprintf("%x", want)
+	strGot = fmt.Sprintf("%x", got)
 	assert.Equal(t, strWant, strGot)
 	assert.Equal(t, want, got)
 }

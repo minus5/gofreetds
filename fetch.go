@@ -2,7 +2,6 @@ package freetds
 
 import (
 	"errors"
-	//	"fmt"
 	"unsafe"
 )
 
@@ -47,7 +46,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			// detecting varchar(max) or varbinary(max) types
 			col.canVary = (size == 2147483647 && typ == SYBCHAR) ||
 				(size == 2147483647 && typ == XSYBXML) ||
-				(size == 1073741823 && typ == SYBBINARY)
+				(size == 1073741823 && typ == SYBBINARY) ||
+				(size == 64512 && typ == SYBIMAGE) //varbinary(MAX)
+
 			col.name = name
 			col.typ = int(typ)
 			col.size = int(size)
@@ -109,7 +110,7 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 						}
 						if data != nil {
 							// @see https://github.com/golang/go/wiki/cgo
-							col.buffer = C.GoBytes(unsafe.Pointer(data), C.int(size))
+							col.buffer = C.GoBytes(unsafe.Pointer(data), C.int(size+1))
 						}
 					}
 
