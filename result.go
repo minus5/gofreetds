@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type Result struct {
@@ -156,7 +157,9 @@ func (r *Result) scanStruct(s *reflect.Value) error {
 
 func asStructPointer(p interface{}) *reflect.Value {
 	sp := reflect.ValueOf(p)
-	if sp.Kind() == reflect.Ptr {
+	if _, ok := p.(*time.Time); ok {
+		return nil
+	} else if sp.Kind() == reflect.Ptr {
 		s := sp.Elem()
 		if s.Kind() == reflect.Struct {
 			return &s

@@ -57,6 +57,17 @@ func TestResultScan(t *testing.T) {
 	assert.Equal(t, f, float64(123.45))
 }
 
+func TestResultScanSingleTime(t *testing.T) {
+	var tm time.Time
+	r := NewResult()
+	r.addColumn("tm", 0, 0)
+	r.addValue(0, 0, now)
+	assert.True(t, r.Next())
+	err := r.Scan(&tm)
+	assert.Nil(t, err)
+	assert.Equal(t, tm, now)
+}
+
 func TestResultCurrentRow(t *testing.T) {
 	r := testResult()
 	assert.Equal(t, -1, r.CurrentRow())
