@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"log"
 	"sync"
 	"testing"
 	"time"
@@ -64,6 +65,33 @@ create table [dbo].[tm] (
 )`,
 }
 
+func TestMain(m *testing.M) {
+
+	err := runCreateDBScripts()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	os.Exit(m.Run())
+}
+
+func runCreateDBScripts() error {
+	conn, err := NewConn(testDbConnStr(1))
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	for _, s := range CREATE_DB_SCRIPTS {
+		_, err := conn.Exec(s)
+		if err != nil {
+			return fmt.Errorf("Error running create db scripts with sql: %v\n%v", s, err)
+		}
+	}
+
+	return nil
+}
+
 func ConnectToTestDb(t *testing.T) *Conn {
 	conn, err := NewConn(testDbConnStr(1))
 	if err != nil {
@@ -100,16 +128,6 @@ func TestItIsSafeToCloseFailedConnection(t *testing.T) {
 	assert.NotNil(t, conn)
 	assert.False(t, conn.isLive())
 	assert.True(t, conn.isDead())
-}
-
-func TestCreateTable(t *testing.T) {
-	conn := ConnectToTestDb(t)
-	assert.NotNil(t, conn)
-	defer conn.Close()
-	for _, s := range CREATE_DB_SCRIPTS {
-		_, err := conn.Exec(s)
-		assert.Nil(t, err)
-	}
 }
 
 func TestStoredProcedureReturnValue(t *testing.T) {
