@@ -444,8 +444,11 @@ func testNvarcharMax(t *testing.T, str string) {
 	assert.Nil(t, err)
 	val, err := c.SelectValue("select nvarchar_max from dbo.freetds_types where int = 3")
 	assert.Nil(t, err)
-	//t.Logf("nvarchar_max: %v", val)
-	assert.Equal(t, str, val)
+	//t.Logf("nvarchar_max len: %d", len(fmt.Sprintf("%s", val)))
+	strVal, ok := val.(string)
+	assert.True(t, ok)
+	assert.Equal(t, len(str), len(strVal))
+	assert.EqualValues(t, str, strVal)
 }
 
 func TestTypes(t *testing.T) {

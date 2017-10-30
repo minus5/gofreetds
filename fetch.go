@@ -110,7 +110,11 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 						}
 						if data != nil {
 							// @see https://github.com/golang/go/wiki/cgo
-							col.buffer = C.GoBytes(unsafe.Pointer(data), C.int(size+1))
+							if col.typ == SYBBINARY || col.typ == SYBIMAGE {
+								size++
+							}
+							//fmt.Printf("col.typ: %d\n", col.typ)
+							col.buffer = C.GoBytes(unsafe.Pointer(data), C.int(size))
 						}
 					}
 
