@@ -31,6 +31,7 @@ type ConnPool struct {
 	connStr       string
 	maxConn       int
 	pool          []*Conn
+	done          chan bool
 	poolGuard     chan bool
 	poolMutex     sync.Mutex
 	cleanupTicker *time.Ticker
@@ -58,6 +59,7 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 		cleanupTicker: time.NewTicker(poolCleanupInterval),
 		connCount:     0,
 		spParamsCache: NewParamsCache(),
+		done:          make(chan bool, 1),
 	}
 	conn, err := p.newConn()
 	if err != nil {
@@ -67,8 +69,11 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 	p.poolGuard = make(chan bool, p.maxConn)
 	p.addToPool(conn)
 	go func() {
-		for _ = range p.cleanupTicker.C {
+		select {
+		case <-p.cleanupTicker.C:
 			p.cleanup()
+		case <-p.done:
+			return
 		}
 	}()
 	return p, nil
@@ -180,6 +185,7 @@ func (p *ConnPool) Close() {
 		conn.close()
 	}
 	p.pool = nil
+	close(p.done)
 }
 
 func (p *ConnPool) cleanup() {
