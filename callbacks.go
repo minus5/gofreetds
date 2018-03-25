@@ -61,7 +61,7 @@ func msgHandler(dbprocAddr C.long, msgno C.DBINT, msgstate, severity C.int, msgt
 			msg += fmt.Sprintf("Server '%s', ", ssrvname)
 		}
 		if len(sprocname) < 0 {
-			msg += fmt.Sprintf("Procedure '%s', ", procname)
+			msg += fmt.Sprintf("Procedure '%s', ", sprocname)
 		}
 		if line > 0 {
 			msg += fmt.Sprintf("Line %d", line)
