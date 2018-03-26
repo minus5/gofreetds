@@ -324,6 +324,7 @@ func TestTimeSpParams(t *testing.T) {
 		//fmt.Println("time", tmIn, tmOut)
 	}
 
+	f(time.Date(2014, 7, 8, 23, 59, 59, 0, time.Local))
 	f(time.Unix(1404856799, 0))
 	f(time.Unix(1404856800, 0))
 	f(time.Unix(1404856801, 0))
@@ -332,9 +333,20 @@ func TestTimeSpParams(t *testing.T) {
 	f(time.Unix(1404856800, 0).UTC())
 	f(time.Unix(1404856801, 0).UTC())
 	f(time.Now())
+
+	// European sumer time begining
+	f(time.Date(2018, 3, 25, 0, 1, 1, 0, time.Local))
+	f(time.Date(2018, 3, 25, 1, 1, 1, 0, time.Local))
+	f(time.Date(2018, 3, 25, 2, 1, 1, 0, time.Local))
+	f(time.Date(2018, 3, 25, 3, 1, 1, 0, time.Local))
+	// Euorpena sumer time end
+	f(time.Date(2018, 10, 28, 0, 1, 1, 0, time.Local))
+	f(time.Date(2018, 10, 28, 1, 1, 1, 0, time.Local))
+	f(time.Date(2018, 10, 28, 2, 1, 1, 0, time.Local))
+	f(time.Date(2018, 10, 28, 3, 1, 1, 0, time.Local))
+
 	var zt time.Time
 	f(zt)
-
 	now := time.Now()
 	data := &struct {
 		Tm time.Time

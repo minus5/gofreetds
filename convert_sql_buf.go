@@ -59,8 +59,14 @@ var (
 
 func toLocalTime(value time.Time) time.Time {
 	value = value.In(time.Local)
+	value0 := value
+	// remove timezone offset
 	_, of := value.Zone()
 	value = value.Add(time.Duration(-of) * time.Second)
+	// compensate day light saving failures
+	if _, of2 := value.Zone(); of2 != of {
+		value = value0.Add(time.Duration(-of2) * time.Second)
+	}
 	return value
 }
 
