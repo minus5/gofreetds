@@ -83,6 +83,7 @@ func deleteConnection(conn *Conn) {
 }
 
 const SYBASE string = "sybase"
+const SYBASE_12_5 string = "sybase_12_5"
 
 //Connection to the database.
 type Conn struct {
@@ -221,7 +222,7 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	// Added for Sybase compatibility mode
 	// Version cannot be set to 7.2
 	// Allowing version to be set inside freetds
-	if conn.credentials.compatibility != SYBASE {
+	if conn.credentials.compatibility != SYBASE && conn.credentials.compatibility != SYBASE_12_5{
 		C.my_setlversion(login)
 	}
 
@@ -428,7 +429,7 @@ func (conn *Conn) setDefaults() error {
 	// Adding check for Sybase compatiblity mode
 	// These connection settings below do not
 	// function with Sybase ASE
-	if conn.credentials.compatibility != SYBASE {
+	if conn.credentials.compatibility != SYBASE && conn.credentials.compatibility != SYBASE_12_5 {
 		//defaults copied from .Net Driver
 		_, err = conn.exec(`
         set quoted_identifier on

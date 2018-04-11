@@ -210,7 +210,7 @@ const sybaseAseGetSpParamsSql string = `
 `
 
 func (conn *Conn) getSpParamsSql(spName string) string {
-	if conn.credentials.compatibility == SYBASE {
+	if conn.credentials.compatibility == SYBASE || conn.credentials.compatibility == SYBASE_12_5 {
 		return fmt.Sprintf(sybaseAseGetSpParamsSql, spName)
 	}
 	return fmt.Sprintf(msSqlGetSpParamsSql, spName)

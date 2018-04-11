@@ -11,6 +11,10 @@ const statusRow string = `;
    select cast(coalesce(scope_identity(), -1) as bigint) last_insert_id, 
           cast(@@rowcount as bigint) rows_affected
 `
+const statusRowSybaseASE string = `
+   select cast(coalesce(@@IDENTITY, -1) as int) last_insert_id, 
+          cast(@@rowcount as int) rows_affected
+`
 
 //Execute sql query with arguments.
 //? in query are arguments placeholders.
@@ -24,10 +28,31 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 	if err != nil {
 		return nil, err
 	}
-	statement += statusRow
-	sql := fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
+
+	if conn.credentials.compatibility != SYBASE_12_5 {
+		statement += statusRow
+	} else {
+		statement += statusRowSybaseASE
+	}
+
+	sql := ``
+
+	if conn.credentials.compatibility != SYBASE_12_5 {
+		sql = fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
+	} else {
+		sql = query
+		for _, val := range params {
+			_, stringValue, _ := go2SqlDataType(val)
+			sql = strings.Replace(sql, "?", stringValue, 1)
+		}
+	}
+
 	if numParams == 0 {
-		sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
+		if conn.credentials.compatibility != SYBASE_12_5 {
+			sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
+		} else {
+			sql = fmt.Sprintf("%s", statement)
+		}
 	}
 	return conn.Exec(sql)
 }
