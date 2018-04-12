@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"regexp"
 )
 
 const statusRow string = `;
@@ -40,10 +41,13 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 	if conn.credentials.compatibility != SYBASE_12_5 {
 		sql = fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
 	} else {
-		sql = query
-		for _, val := range params {
-			_, stringValue, _ := go2SqlDataType(val)
-			sql = strings.Replace(sql, "?", stringValue, 1)
+
+		sql = strings.Replace(query, "?", "$bindkey", -1)
+		re, _ := regexp.Compile(`(?P<bindkey>\$bindkey)`)
+		matches := re.FindAllSubmatchIndex([]byte(sql), -1)
+		for i,_ := range matches {
+			_,escapedValue,_:=go2SqlDataType(params[i])
+			sql =  fmt.Sprintf("%s", strings.Replace(sql, "$bindkey", escapedValue, 1))
 		}
 	}
 
