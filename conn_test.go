@@ -506,7 +506,7 @@ func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
 		sql = fmt.Sprintf(`create table table_name ( %s )  `, columDef)
 	}
 
-	sql = strings.Replace(sql, "table_name", name, 1)
+	sql = strings.Replace(sql, "table_name", name, 3)
 	_, err := conn.Exec(sql)
 	assert.Nil(t, err)
 }
