@@ -32,13 +32,15 @@ func testCredentials(t *testing.T, crd *credentials) {
 
 func TestParseConnectionStringCompatibilityMode(t *testing.T) {
 	setDefaultStrings := map[string]string{
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000":                           "",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility_mode=Sybase": "sybase",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility mode=sybase": "sybase",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility Mode=sybase": "sybase",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility_Mode=Sybase": "sybase",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility=Other":       "other",
-		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility=other":       "other",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000":                                "",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility_mode=Sybase":      "sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility mode=sybase":      "sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility Mode=sybase":      "sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility_Mode=Sybase":      "sybase",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility Mode=sybase_12_5": "sybase_12_5",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility_Mode=Sybase_12_5": "sybase_12_5",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;Compatibility=Other":            "other",
+		"Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;Failover Partner=myMirror;Max Pool Size=200;Lock Timeout=1000;compatibility=other":            "other",
 	}
 	for connStr, expected := range setDefaultStrings {
 		crd := NewCredentials(connStr)

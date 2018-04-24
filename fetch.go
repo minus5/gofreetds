@@ -37,6 +37,9 @@ func (conn *Conn) fetchResults() ([]*Result, error) {
 			if typ == SYBUNIQUE {
 				size = 36
 			}
+			if typ == SYBNUMERIC || typ==SYBDECIMAL {
+				size = 8
+			}
 			bindTyp, typ := dbbindtype(typ)
 			result.addColumn(name, int(size), int(typ))
 			if bindTyp == C.NTBSTRINGBIND && C.SYBCHAR != typ && C.SYBTEXT != typ && XSYBXML != typ {

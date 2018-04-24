@@ -102,6 +102,13 @@ func TestParseParams(t *testing.T) {
 
 func TestExecuteSqlDatetime(t *testing.T) {
 	c := ConnectToTestDb(t)
-	_, err := c.ExecuteSql("select top 1 datetime from dbo.freetds_types where datetime < ?", time.Now())
+	var err error
+	sql := "select top 1 datetime from dbo.freetds_types where datetime < ?"
+	if !c.sybaseMode125() {
+		_, err = c.ExecuteSql(sql, time.Now())
+	} else {
+		sql = "select top 1 datetime from freetds_types where datetime < ?"
+		_, err = c.ExecuteSqlSybase125(sql, time.Now().Format( "2006-01-02 15:04:05"))
+	}
 	assert.Nil(t, err)
 }

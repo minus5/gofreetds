@@ -12,7 +12,7 @@ const statusRow string = `;
    select cast(coalesce(scope_identity(), -1) as bigint) last_insert_id, 
           cast(@@rowcount as bigint) rows_affected
 `
-const statusRowSybaseASE string = `
+const statusRowSybase125 string = `
    select cast(coalesce(@@IDENTITY, -1) as int) last_insert_id, 
           cast(@@rowcount as int) rows_affected
 `
@@ -30,36 +30,38 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 		return nil, err
 	}
 
-	if conn.credentials.compatibility != SYBASE_12_5 {
-		statement += statusRow
-	} else {
-		statement += statusRowSybaseASE
-	}
+	statement += statusRow
 
-	sql := ``
-
-	if conn.credentials.compatibility != SYBASE_12_5 {
-		sql = fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
-	} else {
-
-		sql = strings.Replace(query, "?", "$bindkey", -1)
-		re, _ := regexp.Compile(`(?P<bindkey>\$bindkey)`)
-		matches := re.FindAllSubmatchIndex([]byte(sql), -1)
-		for i,_ := range matches {
-			_,escapedValue,_:=go2SqlDataType(params[i])
-			sql =  fmt.Sprintf("%s", strings.Replace(sql, "$bindkey", escapedValue, 1))
-		}
-	}
+	sql := fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
 
 	if numParams == 0 {
-		if conn.credentials.compatibility != SYBASE_12_5 {
-			sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
-		} else {
-			sql = fmt.Sprintf("%s", statement)
-		}
+		sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
 	}
 	return conn.Exec(sql)
 }
+
+func (conn *Conn) ExecuteSqlSybase125(query string, params ...driver.Value) ([]*Result, error) {
+	statement, numParams := query2Statement(query)
+	if numParams != len(params) {
+		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
+	}
+
+	statement += statusRowSybase125
+	sql := strings.Replace(query, "?", "$bindkey", -1)
+	re, _ := regexp.Compile(`(?P<bindkey>\$bindkey)`)
+	matches := re.FindAllSubmatchIndex([]byte(sql), -1)
+
+	for i, _ := range matches {
+		_, escapedValue, _ := go2SqlDataType(params[i])
+		sql = fmt.Sprintf("%s", strings.Replace(sql, "$bindkey", escapedValue, 1))
+	}
+
+	if numParams == 0 {
+		sql = fmt.Sprintf("%s", statement)
+	}
+	return conn.Exec(sql)
+}
+
 
 //converts query to SqlServer statement for sp_executesql
 //replaces ? in query with params @p1, @p2, ...
