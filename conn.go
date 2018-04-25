@@ -83,6 +83,7 @@ func deleteConnection(conn *Conn) {
 }
 
 const SYBASE string = "sybase"
+const SYBASE_12_5 string = "sybase_12_5"
 
 //Connection to the database.
 type Conn struct {
@@ -221,7 +222,7 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	// Added for Sybase compatibility mode
 	// Version cannot be set to 7.2
 	// Allowing version to be set inside freetds
-	if conn.credentials.compatibility != SYBASE {
+	if !conn.sybaseMode() && !conn.sybaseMode125() {
 		C.my_setlversion(login)
 	}
 
@@ -428,7 +429,7 @@ func (conn *Conn) setDefaults() error {
 	// Adding check for Sybase compatiblity mode
 	// These connection settings below do not
 	// function with Sybase ASE
-	if conn.credentials.compatibility != SYBASE {
+	if !conn.sybaseMode() && !conn.sybaseMode125() {
 		//defaults copied from .Net Driver
 		_, err = conn.exec(`
         set quoted_identifier on
@@ -441,7 +442,11 @@ func (conn *Conn) setDefaults() error {
 		}
 	}
 	if t := conn.credentials.lockTimeout; t > 0 {
-		_, err = conn.exec(fmt.Sprintf("set lock_timeout %d", t))
+		sql := "set lock_timeout %d"
+		if conn.sybaseMode125() {
+			sql = "set lock wait %d"
+		}
+		_, err = conn.exec(fmt.Sprintf(sql, t))
 	}
 	return err
 }
@@ -472,4 +477,12 @@ func parseFreeTdsVersion(dbVersion string) []int {
 		}
 	}
 	return freeTdsVersion
+}
+
+func (conn Conn) sybaseMode() bool {
+	return conn.credentials.compatibility == SYBASE
+}
+
+func (conn Conn) sybaseMode125() bool {
+	return conn.credentials.compatibility == SYBASE_12_5
 }

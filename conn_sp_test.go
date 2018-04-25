@@ -23,13 +23,19 @@ func TestExecSpReturnValue(t *testing.T) {
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_return_value")
 	assert.Nil(t, err)
-	assert.False(t, rst.HasResults())
+	if !conn.sybaseMode125() {
+		assert.False(t, rst.HasResults())
+	}
 	assert.Equal(t, 123, rst.Status())
 }
 
 func TestExecSpResults(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_results", " as select 1 one; select 2 two; return 456")
+	spBody := " as select 1 one; select 2 two; return 456"
+	if conn.sybaseMode125() {
+		spBody = " as select 1 one  select 2 two  return 456"
+	}
+	err := createProcedure(conn, "test_results", spBody)
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_results")
 	assert.Nil(t, err)
@@ -39,20 +45,34 @@ func TestExecSpResults(t *testing.T) {
 
 func TestExecSpInputParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_input_params", "@p1 int = 0, @p2 int, @p3 as varchar(10), @p4 datetime, @p5 varbinary(10) = null as select @p1 = @p1 + @p2; return @p1")
+	spBody := "@p1 int = 0, @p2 int, @p3 as varchar(10), @p4 datetime, @p5 varbinary(10) = null as select @p1 = @p1 + @p2; return @p1"
+	if conn.sybaseMode125() {
+		spBody = "@p1 int = 0, @p2 int, @p3 varchar(10), @p4 datetime, @p5 varbinary(10) = null as select @p1 = @p1 + @p2  return @p1"
+	}
+	err := createProcedure(conn, "test_input_params", spBody)
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_input_params", 123, 234, "pero", time.Now(), []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 0})
 	assert.Nil(t, err)
-	assert.False(t, rst.HasResults())
+	if !conn.sybaseMode125() {
+		assert.False(t, rst.HasResults())
+	}
 	assert.Equal(t, 357, rst.Status())
 }
 
 func TestExecSpInputParamsTypes(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_input_params3", `
+
+	spBody := `
     @p1 int = 0, @p2 smallint, @p3 bigint, @p4 tinyint, @p5 money, @p6 real as
     select @p1, @p2, @p3, @p4, @p5, @p6
-    return 1`)
+    return 1`
+	if conn.sybaseMode125() {
+		spBody = `
+    @p1 int = 0, @p2 smallint, @p3 int, @p4 tinyint, @p5 money, @p6 real as
+    select @p1, @p2, @p3, @p4, @p5, @p6
+    return 1`
+	}
+		err := createProcedure(conn, "test_input_params3", spBody)
 	assert.Nil(t, err)
 	//all input types are int, but they are converted to apropriate sql types
 	rst, err := conn.ExecSp("test_input_params3", 1, 2, 3, 4, 5, 6)
@@ -94,13 +114,21 @@ func TestMoneyRead(t *testing.T) {
 
 func TestExecSpInputParams2(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_input_params2", `
+	spBody := `
   @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(10), @p5 varbinary(10), @p6 as nvarchar(255) as
   select @p1, @p2, @p3, @p4, @p5, @p6
   if exists(select * from sys.tables where name = 'tbl_test_input_params2')
      drop table tbl_test_input_params2
   select @p1 p1, @p2 p2, @p3 p3, @p4 p4, @p5 p5, @p6 p6 into tbl_test_input_params2
-  return`)
+  return`
+  	if conn.sybaseMode125() {
+  		spBody = `
+  @p1 nvarchar(255), @p2 varchar(255), @p3 nvarchar(255), @p4 nchar(20), @p5 varbinary(10), @p6 nvarchar(255) as
+  select @p1, @p2, @p3, @p4, @p5, @p6
+  select @p1 p1, @p2 p2, @p3 p3, @p4 p4, @p5 p5, @p6 p6 into #tbl_test_input_params2
+  return`
+	}
+	err := createProcedure(conn, "test_input_params2", spBody)
 	assert.Nil(t, err)
 	want := "£¢§‹›†€ ✓"
 	wantp2 := "abc"
@@ -135,7 +163,9 @@ func TestExecSpOutputParams(t *testing.T) {
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_output_params", 123)
 	assert.Nil(t, err)
-	assert.False(t, rst.HasResults())
+	if !conn.sybaseMode125() {
+		assert.False(t, rst.HasResults())
+	}
 	assert.Equal(t, 0, rst.Status())
 	assert.True(t, rst.HasOutputParams())
 	assert.Equal(t, len(rst.outputParams), 1)
@@ -153,12 +183,14 @@ func TestGetSpParams(t *testing.T) {
 	assert.Nil(t, err)
 	p := params[0]
 	assert.Equal(t, p.Name, "@p1")
-	assert.EqualValues(t, p.ParameterId, 1)
 	assert.EqualValues(t, p.UserTypeId, SYBINT4)
 	assert.Equal(t, p.IsOutput, false)
 	assert.EqualValues(t, p.MaxLength, 4)
-	assert.Equal(t, int(p.Precision), 0xa)
 	assert.Equal(t, int(p.Scale), 0x0)
+	if !conn.sybaseMode125() {
+		assert.EqualValues(t, p.ParameterId, 1)
+		assert.Equal(t, int(p.Precision), 0xa)
+	}
 }
 
 func TestGetSpParamsSqlMsSql(t *testing.T) {
@@ -189,6 +221,17 @@ func createProcedure(conn *Conn, name, body string) error {
 	create procedure sp_name
     sp_body
   `
+	if conn.sybaseMode125() {
+		drop = `
+	if exists(select id from sysobjects where name = 'sp_name'  and type = 'P')
+    drop procedure sp_name
+  `
+		create = `
+	create procedure sp_name
+    sp_body
+  `
+	}
+
 	drop = strings.Replace(drop, "sp_name", name, -1)
 	create = strings.Replace(create, "sp_name", name, -1)
 	create = strings.Replace(create, "sp_body", body, -1)
@@ -202,9 +245,20 @@ func createProcedure(conn *Conn, name, body string) error {
 
 func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_sp_result", `as
-    select 1.25 f1, cast(1.26 as decimal(10,5)) f2, cast(1.27 as numeric(10,5)) f3
-    return 0`)
+	spBody := `as
+    select 1.25 as f1, cast(1.26 as decimal(10,5)) as f2, cast(1.27 as numeric(10,5)) as f3
+    return 0`
+    if conn.sybaseMode125() {
+    	spBody = `as
+    declare @f1 float
+    declare @f2 decimal(10,5)
+    declare @f3 numeric(10,5)
+    select @f1=1.25, @f2=1.26, @f3=1.27
+    select @f1 as f1, @f2 as f2, @f3 as f3
+    return 0
+`
+	}
+	err := createProcedure(conn, "test_sp_result", spBody)
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_sp_result")
 	assert.Nil(t, err)
@@ -221,9 +275,15 @@ func TestHandlingNumericAndDecimalDataTypes(t *testing.T) {
 
 func TestBugFixEmptyStringInSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_sp_bug_fix_1", `@p1 varchar(255) as
+	spBody := `@p1 varchar(255) as
     select '_' + @p1 + '_', len(@p1)
-    return 0`)
+    return 0`
+    if conn.sybaseMode125() {
+    	spBody = `@p1 varchar(255) as
+    select '_' + @p1 + '_', len(ltrim(rtrim(@p1)))
+    return 0`
+	}
+	err := createProcedure(conn, "test_sp_bug_fix_1", spBody)
 	assert.Nil(t, err)
 	rst, err := conn.ExecSp("test_sp_bug_fix_1", "")
 	assert.Nil(t, err)
@@ -238,9 +298,15 @@ func TestBugFixEmptyStringInSpParams(t *testing.T) {
 
 func TestBugGuidInSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_sp_bug_fix_2", `@p1 uniqueidentifier as
+	spBody := `@p1 uniqueidentifier as
     select cast(@p1 as varchar(255)), @p1
-    return 0`)
+    return 0`
+    if conn.sybaseMode125() {
+		spBody = `@p1 char(36) as
+    select cast(@p1 as varchar(255)), @p1
+    return 0`
+	}
+	err := createProcedure(conn, "test_sp_bug_fix_2", spBody)
 	assert.Nil(t, err)
 	var in, out, out2 string
 	in = "B5A0E32D-3F48-4CC2-A44B-74753D9CACF8"
@@ -305,10 +371,17 @@ func TestStoredProcedureNotExists(t *testing.T) {
 
 func TestTimeSpParams(t *testing.T) {
 	conn := ConnectToTestDb(t)
-	err := createProcedure(conn, "test_sp_time_sp_params", `@p1 datetime as
+	spBody := `@p1 datetime as
     insert into tm (tm) values(@p1)
     select tm, 123 i from tm where id = scope_identity()
-    return 0`)
+    return 0`
+    if conn.sybaseMode125() {
+    	spBody = `@p1 datetime as
+    insert into tm (tm) values(@p1)
+    select tm, 123 i from tm where id = @@IDENTITY
+    return 0`
+	}
+	err := createProcedure(conn, "test_sp_time_sp_params", spBody)
 	assert.Nil(t, err)
 
 	f := func(tmIn time.Time) {
@@ -359,6 +432,9 @@ func TestTimeSpParams(t *testing.T) {
 
 func TestNewDateTypesParam(t *testing.T) {
 	conn := ConnectToTestDb(t)
+	if conn.sybaseMode125() {
+		t.Skip("datettimeoffset does not exist in Sybase 12.5")
+	}
 	err := createProcedure(conn, "test_sp_with_datetimeoffset_param", `
     (@p1 datetimeoffset, @p2 date, @p3 time, @p4 datetime2) as
     DECLARE @datetime datetime = @p1;
@@ -386,6 +462,9 @@ func TestNewDateTypesParam(t *testing.T) {
 
 func TestExecSpWithVarcharMax(t *testing.T) {
 	conn := ConnectToTestDb(t)
+	if conn.sybaseMode125() {
+		t.Skip("max is not a valid aregument in Sybase 12.5 for varchar(max)")
+	}
 	err := createProcedure(conn, "test_sp_varchar_max", `
     (@p1 varchar(max) output) as
     select @p1`)
@@ -451,7 +530,11 @@ func TestExecSpBadParameterDataType(t *testing.T) {
 	return`)
 	assert.Nil(t, err)
 
-	err = createProcedure(conn, "test_bad_parameter_data_type2", " as select 1 one; select 2 two; return 456")
+	spBody := " as select 1 one; select 2 two; return 456"
+	if conn.sybaseMode125() {
+		spBody = " as select 1 one select 2 two return 456"
+	}
+	err = createProcedure(conn, "test_bad_parameter_data_type2", spBody)
 	assert.Nil(t, err)
 
 	var intval int16

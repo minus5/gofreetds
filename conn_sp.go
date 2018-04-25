@@ -206,11 +206,11 @@ const sybaseAseGetSpParamsSql string = `
          join syscolumns c
            on c.id = o.id
   where o.name = '%s'
-  order by c.id
+  order by c.id, c.colid
 `
 
 func (conn *Conn) getSpParamsSql(spName string) string {
-	if conn.credentials.compatibility == SYBASE {
+	if conn.sybaseMode() || conn.sybaseMode125() {
 		return fmt.Sprintf(sybaseAseGetSpParamsSql, spName)
 	}
 	return fmt.Sprintf(msSqlGetSpParamsSql, spName)

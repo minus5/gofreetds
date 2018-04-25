@@ -3,6 +3,7 @@ package freetds
 import (
 	"database/sql/driver"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -11,11 +12,18 @@ const statusRow string = `;
    select cast(coalesce(scope_identity(), -1) as bigint) last_insert_id, 
           cast(@@rowcount as bigint) rows_affected
 `
+const statusRowSybase125 string = `
+   select cast(coalesce(@@IDENTITY, -1) as int) last_insert_id, 
+          cast(@@rowcount as int) rows_affected
+`
 
 //Execute sql query with arguments.
 //? in query are arguments placeholders.
 //  ExecuteSql("select * from authors where au_fname = ?", "John")
 func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
+	if conn.sybaseMode125() {
+		return conn.executeSqlSybase125(query, params...)
+	}
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
 		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
@@ -24,10 +32,35 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 	if err != nil {
 		return nil, err
 	}
+
 	statement += statusRow
+
 	sql := fmt.Sprintf("exec sp_executesql N'%s', N'%s', %s", statement, paramDef, paramVal)
+
 	if numParams == 0 {
 		sql = fmt.Sprintf("exec sp_executesql N'%s'", statement)
+	}
+	return conn.Exec(sql)
+}
+
+func (conn *Conn) executeSqlSybase125(query string, params ...driver.Value) ([]*Result, error) {
+	statement, numParams := query2Statement(query)
+	if numParams != len(params) {
+		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
+	}
+
+	statement += statusRowSybase125
+	sql := strings.Replace(query, "?", "$bindkey", -1)
+	re, _ := regexp.Compile(`(?P<bindkey>\$bindkey)`)
+	matches := re.FindAllSubmatchIndex([]byte(sql), -1)
+
+	for i, _ := range matches {
+		_, escapedValue, _ := go2SqlDataType(params[i])
+		sql = fmt.Sprintf("%s", strings.Replace(sql, "$bindkey", escapedValue, 1))
+	}
+
+	if numParams == 0 {
+		sql = fmt.Sprintf("%s", statement)
 	}
 	return conn.Exec(sql)
 }

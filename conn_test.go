@@ -2,9 +2,9 @@ package freetds
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -15,7 +15,7 @@ import (
 var CREATE_DB_SCRIPTS = [...]string{`
 if exists(select * from sys.tables where name = 'freetds_types')
 drop table freetds_types
-;
+`, `
 create table freetds_types (
   int int null,
   long bigint null,
@@ -58,10 +58,63 @@ create procedure freetds_return_value as
 	`
 if exists(select * from sys.tables where name = 'tm')
 drop table tm
-;
+`, `
 create table [dbo].[tm] (
 	[id] int NOT NULL IDENTITY(1, 1),
 	[tm] datetime null
+)`,
+}
+
+var CREATE_DB_SCRIPTS_SYBASE_12_5 = [...]string{`
+if exists(select name from sysobjects where name = 'freetds_types')
+drop table freetds_types
+`, `
+create table freetds_types (
+  int int null,
+  long decimal(19,0) null,
+  smallint smallint null,
+  tinyint tinyint null,
+  varchar varchar(255) null ,
+  nvarchar nvarchar(255) null,
+  char char(255) null,
+  nchar nchar(255) null,
+  text text null,
+  ntext text null,
+  datetime datetime null,
+  smalldatetime smalldatetime null,
+  money money null,
+  smallmoney smallmoney null,
+  real real null,
+  float float(48) null,
+  bit bit,
+  timestamp timestamp null,
+  binary binary(10) null,
+  nvarchar_max text null,
+  varchar_max text null,
+  varbinary_max image null
+)
+
+
+insert into freetds_types (int, long, smallint, tinyint, varchar, nvarchar, char, nchar, text, ntext, datetime, smalldatetime, money, smallmoney, real, float, bit, binary)
+values (2147483647,   9223372036854775807, 32767, 255, 'išo medo u dućan   ',N'išo medo u dućan    2','išo medo u dućan    3',N'išo medo u dućan    4','išo medo u dućan    5',N'išo medo u dućan    6', '1972-08-08 10:11:12','1972-08-08 10:11:12', 1234.5678,   1234.5678,  1234.5678,  1234.5678, 0, 0x123567890)
+
+insert into freetds_types (int, long, smallint, tinyint, varchar, nvarchar, char, nchar, text, ntext, datetime, smalldatetime, money, smallmoney, real, float, bit, binary)
+values (-2147483648, -9223372036854775808, -32768,  0, 'nije reko dobar dan',N'nije reko dobar dan 2','nije reko dobar dan 3',N'nije reko dobar dan 4','nije reko dobar dan 5',N'nije reko dobar dan 6', '1998-10-10 16:17:18','1998-10-10 16:17:18', -1234.5678, -1234.5678, -1234.5678, -1234.5678, 1, 0x0987654321abcd)
+
+insert into freetds_types (int, bit) values (3, 0)
+`, `
+if exists(select name from sysobjects where name='freetds_return_value' and type='P')
+  drop procedure freetds_return_value
+`, `
+create procedure freetds_return_value as
+  return -5`,
+	`
+if exists(select name from sysobjects where name='tm' and type='U')
+drop table tm
+`, `
+create table tm (
+	id int IDENTITY NOT NULL ,
+	tm datetime null
 )`,
 }
 
@@ -82,7 +135,12 @@ func runCreateDBScripts() error {
 	}
 	defer conn.Close()
 
-	for _, s := range CREATE_DB_SCRIPTS {
+	scripts := CREATE_DB_SCRIPTS
+	if conn.sybaseMode125() {
+		scripts = CREATE_DB_SCRIPTS_SYBASE_12_5
+	}
+
+	for _, s := range scripts {
 		_, err := conn.Exec(s)
 		if err != nil {
 			return fmt.Errorf("Error running create db scripts with sql: %v\n%v", s, err)
@@ -101,6 +159,24 @@ func ConnectToTestDb(t *testing.T) *Conn {
 	return conn
 }
 
+func ConnectToTestDbSybase(t *testing.T) *Conn {
+	conn, err := NewConn(testDbConnStrSybase(1))
+	if err != nil {
+		t.Errorf("can't connect to the test database")
+		return nil
+	}
+	return conn
+}
+
+func ConnectToTestDbSybase125(t *testing.T) *Conn {
+	conn, err := NewConn(testDbConnStrSybase125(1))
+	if err != nil {
+		t.Errorf("can't connect to the test database")
+		return nil
+	}
+	return conn
+}
+
 func testDbConnStr(maxPoolSize int) string {
 	connStr := os.Getenv("GOFREETDS_CONN_STR")
 	mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
@@ -108,6 +184,26 @@ func testDbConnStr(maxPoolSize int) string {
 		connStr = fmt.Sprintf("%s;mirror=%s", connStr, mirror)
 	}
 	connStr = fmt.Sprintf("%s;max_pool_size=%d", connStr, maxPoolSize)
+	return connStr
+}
+
+func testDbConnStrSybase(maxPoolSize int) string {
+	connStr := os.Getenv("GOFREETDS_CONN_STR")
+	mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
+	if mirror != "" {
+		connStr = fmt.Sprintf("%s;mirror=%s;compatibility=sybase", connStr, mirror)
+	}
+	connStr = fmt.Sprintf("%s;max_pool_size=%d;compatibility=sybase", connStr, maxPoolSize)
+	return connStr
+}
+
+func testDbConnStrSybase125(maxPoolSize int) string {
+	connStr := os.Getenv("GOFREETDS_CONN_STR")
+	mirror := os.Getenv("GOFREETDS_MIRROR_HOST")
+	if mirror != "" {
+		connStr = fmt.Sprintf("%s;mirror=%s;compatibility=sybase_12_5", connStr, mirror)
+	}
+	connStr = fmt.Sprintf("%s;max_pool_size=%d;compatibility=sybase_12_5", connStr, maxPoolSize)
 	return connStr
 }
 
@@ -121,6 +217,26 @@ func TestConnect(t *testing.T) {
 	defer conn.Close()
 	assert.True(t, conn.isLive())
 	assert.False(t, conn.isDead())
+}
+
+func TestConnectSybase(t *testing.T) {
+	conn := ConnectToTestDbSybase(t)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+	assert.True(t, conn.isLive())
+	assert.False(t, conn.isDead())
+	assert.True(t, conn.sybaseMode())
+	assert.False(t, conn.sybaseMode125())
+}
+
+func TestConnectSybase125(t *testing.T) {
+	conn := ConnectToTestDbSybase125(t)
+	assert.NotNil(t, conn)
+	defer conn.Close()
+	assert.True(t, conn.isLive())
+	assert.False(t, conn.isDead())
+	assert.True(t, conn.sybaseMode125())
+	assert.False(t, conn.sybaseMode())
 }
 
 func TestItIsSafeToCloseFailedConnection(t *testing.T) {
@@ -151,6 +267,9 @@ func TestReadingTextNtext(t *testing.T) {
 		return
 	}
 	defer conn.Close()
+	if conn.sybaseMode125() {
+		t.Skip("Ntext does not exist in Sybase 12.5")
+	}
 	results, err := conn.Exec(`select top 2 text, ntext from dbo.freetds_types`)
 	assert.Nil(t, err)
 	assert.Equal(t, "išo medo u ducan    5", results[0].Rows[0][0])
@@ -166,8 +285,12 @@ func TestRetryOnKilledConnection(t *testing.T) {
 		return
 	}
 
-	pid1, _ := conn1.SelectValue("select @@spid")
-	conn2.Exec(fmt.Sprintf("kill %d", pid1))
+	if conn1.sybaseMode125() {
+		conn1.Exec("select syb_quit()") //can't kill own session with kill command in sybase, use syb_quit()
+	} else {
+		pid1, _ := conn1.SelectValue("select @@spid")
+		conn2.Exec(fmt.Sprintf("kill %d", pid1))
+	}
 	assert.False(t, conn1.isLive())
 	assert.True(t, conn1.isDead())
 	_, err := conn1.exec("select * from authors")
@@ -202,7 +325,11 @@ func TestExecute(t *testing.T) {
 	rst, err = conn.Exec("sp_help 'authors'")
 	assert.Nil(t, err)
 	assert.NotNil(t, rst)
-	assert.True(t, len(rst) > 7)
+	mincount := 7
+	if conn.sybaseMode125() {
+		mincount = 5
+	}
+	assert.True(t, len(rst) > mincount)
 }
 
 func TestRowsAffected(t *testing.T) {
@@ -359,6 +486,9 @@ func TestTransactionCommitRollback(t *testing.T) {
 func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
 	if columDef == "" {
 		columDef = "id int not null identity,  name varchar(255)"
+		if conn.sybaseMode125() {
+			columDef = "id int identity not null,  name varchar(255)"
+		}
 	}
 	sql := fmt.Sprintf(`
 	if exists(select * from sys.tables where name = 'table_name')
@@ -368,6 +498,13 @@ func createTestTable2(t *testing.T, conn *Conn, name string, columDef string) {
     %s
   ) 
   `, columDef)
+	if conn.sybaseMode125() {
+		_, _ = conn.Exec(strings.Replace(`if exists(select id from sysobjects where name = 'table_name' and type = 'U')
+	  drop table table_name
+	`, "table_name", name, 2))
+		sql = fmt.Sprintf(`create table table_name ( %s )  `, columDef)
+	}
+
 	sql = strings.Replace(sql, "table_name", name, 3)
 	_, err := conn.Exec(sql)
 	assert.Nil(t, err)
@@ -401,14 +538,14 @@ func TestWrongPassword(t *testing.T) {
 	conn, err := connectWithCredentials(c)
 	assert.NotNil(t, err)
 	assert.Nil(t, conn)
-	assert.True(t, strings.Contains(err.Error(), "Login failed for user"))
+	assert.True(t, strings.Contains(err.Error(), "Login failed"))
 	//t.Logf("wrong password message: %s", err)
 }
 
 func TestLockTimeout(t *testing.T) {
 	connStr := testDbConnStr(1)
 	c := NewCredentials(connStr)
-	c.lockTimeout = 100
+	c.lockTimeout = 1
 	conn, err := connectWithCredentials(c)
 	assert.Nil(t, err)
 	assert.NotNil(t, conn)
@@ -417,14 +554,26 @@ func TestLockTimeout(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, conn2)
 
+	delaySql := "begin transaction; update authors set phone = phone; waitfor delay '00:00:01'; commit transaction"
+	if conn.sybaseMode125() {
+		delaySql = "begin transaction update authors set phone = phone waitfor delay '00:00:03' commit transaction"
+	}
 	go func() {
-		_, err := conn.Exec("begin transaction; update authors set phone = phone; waitfor delay '00:00:01'; commit transaction")
+		_, err := conn.Exec(delaySql)
 		assert.Nil(t, err)
 	}()
 	time.Sleep(1e8)
-	_, err = conn2.Exec("begin transaction; update authors set phone = phone; commit transaction")
+	immediateSql := "begin transaction; update authors set phone = phone; commit transaction"
+	if conn.sybaseMode125() {
+		immediateSql = "begin transaction update authors set phone = phone commit transaction"
+	}
+	_, err = conn2.Exec(immediateSql)
 	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "Lock request time out period exceeded."))
+	failText := "Lock request time out period exceeded."
+	if conn.sybaseMode125() {
+		failText = "Could not acquire a lock within the specified wait period."
+	}
+	assert.True(t, strings.Contains(err.Error(), failText))
 }
 
 func TestParseFreeTdsVersion(t *testing.T) {
@@ -458,9 +607,15 @@ func longString(size int) string {
 
 func testNvarcharMax(t *testing.T, str string) {
 	c := ConnectToTestDb(t)
-	_, err := c.Exec(fmt.Sprintf("update dbo.freetds_types set nvarchar_max='%s' where int = 3", str))
+	updateSql := "update dbo.freetds_types set nvarchar_max='%s' where int = 3"
+	selectSql := "select nvarchar_max from dbo.freetds_types where int = 3"
+	if c.sybaseMode125() {
+		updateSql = "update freetds_types set nvarchar_max='%s' where int = 3"
+		selectSql = "select nvarchar_max from freetds_types where int = 3"
+	}
+	_, err := c.Exec(fmt.Sprintf(updateSql, str))
 	assert.Nil(t, err)
-	val, err := c.SelectValue("select nvarchar_max from dbo.freetds_types where int = 3")
+	val, err := c.SelectValue(selectSql)
 	assert.Nil(t, err)
 	//t.Logf("nvarchar_max len: %d", len(fmt.Sprintf("%s", val)))
 	strVal, ok := val.(string)
@@ -471,12 +626,22 @@ func testNvarcharMax(t *testing.T, str string) {
 
 func TestTypes(t *testing.T) {
 	c := ConnectToTestDb(t)
-	_, err := c.ExecuteSql("select * from  dbo.freetds_types")
+	sql := "select * from  dbo.freetds_types"
+	var err error
+	if !c.sybaseMode125() {
+		_, err = c.ExecuteSql(sql)
+	} else {
+		sql = "select * from  freetds_types"
+		_, err = c.executeSqlSybase125(sql)
+	}
 	assert.Nil(t, err)
 }
 
 func TestUnknownDataTypeInExecuteSql(t *testing.T) {
 	c := ConnectToTestDb(t)
+	if c.sybaseMode125() {
+		t.Skip("Sybase 12.5 doesn't have sp_executesql")
+	}
 	var str *string
 	_, err := c.ExecuteSql("update dbo.freetds_types set nvarchar_max=? where int = 3", str)
 	assert.NotNil(t, err)
