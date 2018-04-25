@@ -2,9 +2,9 @@ package freetds
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
-	"log"
 	"sync"
 	"testing"
 	"time"
@@ -176,7 +176,6 @@ func ConnectToTestDbSybase125(t *testing.T) *Conn {
 	}
 	return conn
 }
-
 
 func testDbConnStr(maxPoolSize int) string {
 	connStr := os.Getenv("GOFREETDS_CONN_STR")
@@ -633,7 +632,7 @@ func TestTypes(t *testing.T) {
 		_, err = c.ExecuteSql(sql)
 	} else {
 		sql = "select * from  freetds_types"
-		_, err = c.ExecuteSqlSybase125(sql)
+		_, err = c.executeSqlSybase125(sql)
 	}
 	assert.Nil(t, err)
 }

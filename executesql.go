@@ -3,9 +3,9 @@ package freetds
 import (
 	"database/sql/driver"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
-	"regexp"
 )
 
 const statusRow string = `;
@@ -21,6 +21,9 @@ const statusRowSybase125 string = `
 //? in query are arguments placeholders.
 //  ExecuteSql("select * from authors where au_fname = ?", "John")
 func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, error) {
+	if conn.sybaseMode125() {
+		return conn.executeSqlSybase125(query, params...)
+	}
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
 		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
@@ -40,7 +43,7 @@ func (conn *Conn) ExecuteSql(query string, params ...driver.Value) ([]*Result, e
 	return conn.Exec(sql)
 }
 
-func (conn *Conn) ExecuteSqlSybase125(query string, params ...driver.Value) ([]*Result, error) {
+func (conn *Conn) executeSqlSybase125(query string, params ...driver.Value) ([]*Result, error) {
 	statement, numParams := query2Statement(query)
 	if numParams != len(params) {
 		return nil, fmt.Errorf("Incorrect number of params, expecting %d got %d", numParams, len(params))
@@ -61,7 +64,6 @@ func (conn *Conn) ExecuteSqlSybase125(query string, params ...driver.Value) ([]*
 	}
 	return conn.Exec(sql)
 }
-
 
 //converts query to SqlServer statement for sp_executesql
 //replaces ? in query with params @p1, @p2, ...

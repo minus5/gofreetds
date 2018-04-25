@@ -22,11 +22,7 @@ func (s *MssqlStmt) NumInput() int {
 }
 
 func (s *MssqlStmt) Exec(args []driver.Value) (driver.Result, error) {
-	execSql := s.conn.ExecuteSql
-	if s.conn.sybaseMode125() {
-		execSql = s.conn.ExecuteSqlSybase125
-	}
-	results, err := execSql(s.query, args...)
+	results, err := s.conn.ExecuteSql(s.query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -34,11 +30,7 @@ func (s *MssqlStmt) Exec(args []driver.Value) (driver.Result, error) {
 }
 
 func (s *MssqlStmt) Query(args []driver.Value) (driver.Rows, error) {
-	execSql := s.conn.ExecuteSql
-	if s.conn.sybaseMode125() {
-		execSql = s.conn.ExecuteSqlSybase125
-	}
-	results, err := execSql(s.query, args...)
+	results, err := s.conn.ExecuteSql(s.query, args...)
 	if err != nil {
 		return nil, err
 	}

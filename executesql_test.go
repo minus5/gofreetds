@@ -108,7 +108,7 @@ func TestExecuteSqlDatetime(t *testing.T) {
 		_, err = c.ExecuteSql(sql, time.Now())
 	} else {
 		sql = "select top 1 datetime from freetds_types where datetime < ?"
-		_, err = c.ExecuteSqlSybase125(sql, time.Now().Format( "2006-01-02 15:04:05"))
+		_, err = c.executeSqlSybase125(sql, time.Now().Format("2006-01-02 15:04:05"))
 	}
 	assert.Nil(t, err)
 }
