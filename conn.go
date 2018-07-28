@@ -299,6 +299,9 @@ func (conn *Conn) reconnect() error {
 			conn.switchMirror()
 		}
 		_, err = conn.connect()
+		if err == nil {
+			break
+		}
 	}
 	return err
 }
