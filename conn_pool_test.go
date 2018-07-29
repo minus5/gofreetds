@@ -2,9 +2,10 @@ package freetds
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPool(t *testing.T) {
@@ -78,14 +79,30 @@ func TestPoolCleanup(t *testing.T) {
 		c, _ := p.Get()
 		conns[i] = c
 	}
+	expireNow := time.Now().Add(-poolExpiresInterval - time.Second)
 	for i := 0; i < 5; i++ {
 		c := conns[i]
 		p.Release(c)
-		c.expiresFromPool = time.Now().Add(-poolExpiresInterval - time.Second)
+		c.expiresFromPool = expireNow
 	}
 	assert.Equal(t, len(p.pool), 5)
+
+	// conn is released to the head of the pool
+	c, _ := p.Get()
+	assert.Equal(t, conns[4], c)
+	p.Release(c)
+	c.expiresFromPool = expireNow
+
+	c, _ = p.Get()
+	assert.Equal(t, conns[4], c)
+	p.Release(c)
+	c.expiresFromPool = expireNow
+
 	p.cleanup()
 	assert.Equal(t, len(p.pool), 1)
+
+	c, _ = p.Get()
+	assert.Equal(t, conns[4], c)
 }
 
 func TestPoolReturnsLastUsedConnection(t *testing.T) {

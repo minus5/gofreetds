@@ -194,7 +194,7 @@ func (p *ConnPool) cleanup() {
 	if len(p.pool) <= 1 {
 		return
 	}
-	for i := len(p.pool) - 2; i >= 0; i-- {
+	for i := len(p.pool) - 1; i >= 1; i-- {
 		conn := p.pool[i]
 		if conn.expiresFromPool.Before(time.Now()) {
 			conn.close()
