@@ -203,6 +203,8 @@ func (conn *Conn) getDbProc() (*C.DBPROCESS, error) {
 	if login == nil {
 		return nil, errors.New("unable to allocate login structure")
 	}
+	defer C.dbloginfree(login)
+
 	cuser := C.CString(conn.user)
 	defer C.free(unsafe.Pointer(cuser))
 	cpwd := C.CString(conn.pwd)
