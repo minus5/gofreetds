@@ -1,4 +1,4 @@
-##gofreetds
+## gofreetds
 
 Go [FreeTDS](http://www.freetds.org/) wrapper. Native Sql Server database driver.
 
@@ -11,9 +11,9 @@ Features:
   * connection pooling
   * scaning resultsets into structs
 
-##Get started
+## Get started
 
-###Install dependencines
+### Install dependencines
 
 [FreeTDS](http://www.freetds.org/) libraries must be installed on the system.
 

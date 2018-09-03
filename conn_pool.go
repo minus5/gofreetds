@@ -69,11 +69,13 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 	p.poolGuard = make(chan bool, p.maxConn)
 	p.addToPool(conn)
 	go func() {
-		select {
-		case <-p.cleanupTicker.C:
-			p.cleanup()
-		case <-p.done:
-			return
+		for {
+			select {
+			case <-p.cleanupTicker.C:
+				p.cleanup()
+			case <-p.done:
+				return
+			}
 		}
 	}()
 	return p, nil
