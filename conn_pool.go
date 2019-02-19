@@ -82,10 +82,9 @@ func NewConnPool(connStr string) (*ConnPool, error) {
 }
 
 func (p *ConnPool) newConn() (*Conn, error) {
+	conn, err := NewConn(p.connStr)
 	p.poolMutex.Lock()
 	defer p.poolMutex.Unlock()
-
-	conn, err := NewConn(p.connStr)
 	if err == nil {
 		conn.belongsToPool = p
 		//share stored procedure params cache between connections in the pool
